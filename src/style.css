@@ -409,6 +409,19 @@ kbd {
     font-size: 2.25rem;
   }
 
+  .revive-screen {
+    padding: 1rem;
+  }
+
+  .revive-screen h2 {
+    max-width: 100%;
+    margin-right: 0;
+    margin-left: 0;
+    font-size: 1.75rem;
+    line-height: 1.2;
+    text-align: center;
+  }
+
   .status-row {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 0.35rem;

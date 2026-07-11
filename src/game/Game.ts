@@ -109,7 +109,7 @@ export class TigaGame {
       powerPreference: 'high-performance',
       preserveDrawingBuffer: true,
     });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.6));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.VSMShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -662,6 +662,9 @@ export class TigaGame {
   private resize() {
     const width = window.innerWidth;
     const height = window.innerHeight;
+    const pixelRatio = Math.min(window.devicePixelRatio, width <= 760 ? 1.25 : 1.6);
+    this.renderer.setPixelRatio(pixelRatio);
+    this.composer.setPixelRatio(pixelRatio);
     this.camera.aspect = width / Math.max(1, height);
     this.camera.position.z = this.camera.aspect < 0.65 ? 58 : this.camera.aspect < 0.9 ? 44 : 30;
     this.camera.position.y = this.camera.aspect < 0.65 ? 15 : this.camera.aspect < 0.9 ? 13 : 11.5;

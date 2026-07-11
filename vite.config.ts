@@ -5,10 +5,16 @@ export default defineConfig({
     dedupe: ['three'],
   },
   build: {
+    chunkSizeWarningLimit: 520,
     rollupOptions: {
       output: {
-        manualChunks: {
-          three: ['three'],
+        manualChunks(id) {
+          if (id.includes('three/examples/jsm/postprocessing')) {
+            return 'three-postprocessing';
+          }
+          if (id.includes('node_modules/three')) {
+            return 'three';
+          }
         },
       },
     },
