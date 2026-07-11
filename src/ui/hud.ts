@@ -46,6 +46,7 @@ const ABILITY_KEYS: Array<{ key: string; action: Ability; label: string; icon: s
   { key: 'Z', action: 'delacium', label: '迪拉修姆', icon: 'bolt' },
   { key: 'X', action: 'zeperion', label: '哉佩利敖', icon: 'swords' },
   { key: 'C', action: 'runboldt', label: '兰帕尔特', icon: 'gauge' },
+  { key: '5', action: 'evolution-ray', label: '光之进化', icon: 'sparkles' },
   { key: 'D', action: 'super-lightning', label: '时空闪电', icon: 'bolt' },
 ];
 

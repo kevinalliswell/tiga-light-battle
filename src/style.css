@@ -262,7 +262,7 @@ kbd {
   bottom: 1rem;
   left: 1rem;
   display: grid;
-  grid-template-columns: repeat(7, minmax(5.4rem, 1fr));
+  grid-template-columns: repeat(8, minmax(5.2rem, 1fr));
   gap: 0.32rem;
 }
 

@@ -39,6 +39,7 @@ const ENERGY_COST: Record<Ability, number> = {
   delacium: 18,
   zeperion: 20,
   runboldt: 16,
+  'evolution-ray': 28,
   'super-lightning': 35,
 };
 
@@ -58,6 +59,7 @@ const KEY_ACTIONS: Record<string, GameAction> = {
   '2': 'form-multi',
   '3': 'form-sky',
   '4': 'form-shining',
+  '5': 'evolution-ray',
   o: 'revive',
 };
 
@@ -285,6 +287,11 @@ export class TigaGame {
     }
     if (ability === 'super-lightning') {
       this.effects.lightning(start.clone().add(new THREE.Vector3(0, 3, 0)), end);
+      return;
+    }
+    if (ability === 'evolution-ray') {
+      this.effects.beam(start, end, 0xffd866, 0.42);
+      this.effects.impact(end, 0xffef9a, 2.5);
       return;
     }
     const colors: Record<'delacium' | 'zeperion' | 'runboldt', number> = {

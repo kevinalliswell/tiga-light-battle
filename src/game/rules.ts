@@ -6,6 +6,7 @@ export type Ability =
   | 'delacium'
   | 'zeperion'
   | 'runboldt'
+  | 'evolution-ray'
   | 'super-lightning';
 export type DefeatReason = 'exhausted' | 'defeated';
 
@@ -59,6 +60,7 @@ const FORM_ABILITIES: Record<TigaForm, Ability[]> = {
     'delacium',
     'zeperion',
     'runboldt',
+    'evolution-ray',
     'super-lightning',
   ],
 };
@@ -70,6 +72,7 @@ const BASE_DAMAGE: Record<Ability, number> = {
   delacium: 34,
   zeperion: 38,
   runboldt: 30,
+  'evolution-ray': 52,
   'super-lightning': 80,
 };
 

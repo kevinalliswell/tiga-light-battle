@@ -39,6 +39,11 @@ describe('form abilities', () => {
     expect(canUseAbility('sky', 'zeperion')).toBe(false);
   });
 
+  it('reserves the evolution ray for shining form', () => {
+    expect(canUseAbility('shining', 'evolution-ray')).toBe(true);
+    expect(canUseAbility('multi', 'evolution-ray')).toBe(false);
+  });
+
   it('requires a full light meter before shining transformation', () => {
     expect(canTransform('shining', 99)).toBe(false);
     expect(canTransform('shining', 100)).toBe(true);
@@ -69,6 +74,7 @@ describe('Gatanothor final battle', () => {
     ['multi', 'kick'],
     ['power', 'delacium'],
     ['sky', 'runboldt'],
+    ['shining', 'evolution-ray'],
   ] as const)('blocks %s form using %s', (form, ability) => {
     expect(resolveDamage(form, ability, 'gatanothor')).toBe(0);
   });
@@ -89,5 +95,11 @@ describe('Gatanothor final battle', () => {
 
   it('lets ordinary monsters take damage from form-appropriate attacks', () => {
     expect(resolveDamage('power', 'delacium', 'ordinary')).toBeGreaterThan(0);
+  });
+
+  it('makes the shining evolution ray stronger than the ordinary Zeperion beam', () => {
+    expect(resolveDamage('shining', 'evolution-ray', 'ordinary')).toBeGreaterThan(
+      resolveDamage('multi', 'zeperion', 'ordinary'),
+    );
   });
 });
