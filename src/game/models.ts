@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { FORM_STATS, type TigaForm } from './rules';
 
+export { createTiga } from './tigaModel';
+
 export interface MonsterProfile {
   id: 'golza' | 'melba' | 'kyrieloid' | 'gatanothor';
   name: string;
@@ -74,98 +76,6 @@ function mesh(
 
 function limb(radius: number, length: number, color: number) {
   return mesh(new THREE.CapsuleGeometry(radius, length, 6, 10), color, 0.25, 0.52);
-}
-
-export function createTiga(): THREE.Group {
-  const tiga = new THREE.Group();
-  tiga.name = 'tiga';
-
-  const silver = 0xbfc5c9;
-  const red = FORM_STATS.multi.color;
-  const accent = FORM_STATS.multi.accent;
-  const torso = mesh(new THREE.CapsuleGeometry(1.15, 2.2, 8, 16), silver, 0.48, 0.34);
-  torso.position.y = 5.25;
-  torso.scale.set(1, 1.05, 0.62);
-  tiga.add(torso);
-
-  const chestBand = mesh(new THREE.TorusGeometry(0.84, 0.28, 8, 20, Math.PI), red, 0.25, 0.46);
-  chestBand.name = 'form-color';
-  chestBand.position.set(0, 5.65, 0.7);
-  chestBand.rotation.set(Math.PI / 2, 0, Math.PI);
-  tiga.add(chestBand);
-
-  const centerStripe = mesh(new THREE.CapsuleGeometry(0.27, 2.2, 4, 8), accent, 0.22, 0.48);
-  centerStripe.name = 'form-accent';
-  centerStripe.position.set(0, 4.7, 0.73);
-  centerStripe.scale.set(1, 1, 0.3);
-  tiga.add(centerStripe);
-
-  const head = mesh(new THREE.SphereGeometry(0.88, 18, 14), silver, 0.55, 0.28);
-  head.position.set(0, 7.75, 0);
-  head.scale.set(0.82, 1.08, 0.78);
-  tiga.add(head);
-
-  const crest = mesh(new THREE.ConeGeometry(0.22, 1.05, 4), silver, 0.55, 0.28);
-  crest.position.set(0, 8.7, 0);
-  crest.rotation.z = -0.08;
-  tiga.add(crest);
-
-  const eyeMaterial = new THREE.MeshStandardMaterial({
-    color: 0xeefaff,
-    emissive: 0xbfefff,
-    emissiveIntensity: 3.5,
-    roughness: 0.2,
-  });
-  for (const side of [-1, 1]) {
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), eyeMaterial);
-    eye.position.set(side * 0.35, 7.88, 0.66);
-    eye.scale.set(1.35, 0.58, 0.32);
-    tiga.add(eye);
-  }
-
-  const timerMaterial = new THREE.MeshStandardMaterial({
-    color: 0x8ff5ff,
-    emissive: 0x2bbfd6,
-    emissiveIntensity: 4,
-    metalness: 0.1,
-    roughness: 0.2,
-  });
-  const timer = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 10), timerMaterial);
-  timer.name = 'color-timer';
-  timer.position.set(0, 6.07, 0.92);
-  timer.scale.z = 0.35;
-  tiga.add(timer);
-
-  for (const side of [-1, 1]) {
-    const arm = limb(0.36, 2.7, silver);
-    arm.name = side < 0 ? 'left-arm' : 'right-arm';
-    arm.position.set(side * 1.28, 5.05, 0);
-    arm.rotation.z = side * 0.08;
-    tiga.add(arm);
-
-    const forearmBand = mesh(new THREE.CylinderGeometry(0.39, 0.39, 0.72, 10), red, 0.2, 0.5);
-    forearmBand.name = 'form-color';
-    forearmBand.position.set(side * 1.4, 4.3, 0);
-    tiga.add(forearmBand);
-
-    const leg = limb(0.48, 3.2, silver);
-    leg.name = side < 0 ? 'left-leg' : 'right-leg';
-    leg.position.set(side * 0.58, 1.85, 0);
-    tiga.add(leg);
-
-    const boot = mesh(new THREE.CapsuleGeometry(0.52, 1.35, 5, 10), red, 0.24, 0.5);
-    boot.name = 'form-color';
-    boot.position.set(side * 0.58, 0.62, 0.18);
-    boot.rotation.x = Math.PI / 2;
-    tiga.add(boot);
-  }
-
-  tiga.scale.setScalar(0.92);
-  tiga.userData.form = 'multi';
-  tiga.traverse((object) => {
-    if (object instanceof THREE.Mesh) object.frustumCulled = false;
-  });
-  return tiga;
 }
 
 export function applyTigaForm(tiga: THREE.Group, form: TigaForm) {
