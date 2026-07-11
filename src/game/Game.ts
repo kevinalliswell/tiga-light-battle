@@ -1,4 +1,8 @@
 import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import type { GameAction, Hud, HudSnapshot } from '../ui/hud';
 import { Effects } from './effects';
 import {
@@ -65,8 +69,9 @@ const KEY_ACTIONS: Record<string, GameAction> = {
 
 export class TigaGame {
   private readonly scene = new THREE.Scene();
-  private readonly camera = new THREE.PerspectiveCamera(43, 1, 0.1, 160);
+  private readonly camera = new THREE.PerspectiveCamera(40, 1, 0.1, 180);
   private readonly renderer: THREE.WebGLRenderer;
+  private readonly composer: EffectComposer;
   private readonly clock = new THREE.Clock();
   private readonly effects: Effects;
   private readonly hud: Hud;
@@ -106,14 +111,21 @@ export class TigaGame {
     });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8));
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.VSMShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.12;
+    this.renderer.toneMappingExposure = 1.22;
     container.append(this.renderer.domElement);
 
-    this.scene.background = new THREE.Color(0x111a21);
-    this.scene.fog = new THREE.FogExp2(0x172028, 0.018);
+    this.composer = new EffectComposer(this.renderer);
+    this.composer.addPass(new RenderPass(this.scene, this.camera));
+    this.composer.addPass(
+      new UnrealBloomPass(new THREE.Vector2(1, 1), 0.48, 0.5, 0.78),
+    );
+    this.composer.addPass(new OutputPass());
+
+    this.scene.background = new THREE.Color(0x071019);
+    this.scene.fog = new THREE.FogExp2(0x111d25, 0.014);
     this.camera.position.set(0, 11.5, 30);
     this.camera.lookAt(0, 4.2, 0);
     this.setupWorld();
@@ -129,7 +141,8 @@ export class TigaGame {
   }
 
   private setupWorld() {
-    const hemisphere = new THREE.HemisphereLight(0x9ecfe4, 0x151619, 1.85);
+    this.createAtmosphere();
+    const hemisphere = new THREE.HemisphereLight(0x9ecfe4, 0x111315, 1.55);
     this.scene.add(hemisphere);
 
     const keyLight = new THREE.DirectionalLight(0xf4f7ef, 3.2);
@@ -140,17 +153,70 @@ export class TigaGame {
     keyLight.shadow.camera.right = 30;
     keyLight.shadow.camera.top = 25;
     keyLight.shadow.camera.bottom = -8;
+    keyLight.shadow.bias = -0.00035;
+    keyLight.shadow.normalBias = 0.035;
     this.scene.add(keyLight);
 
-    const cityGlow = new THREE.PointLight(0x42bdd6, 35, 36, 1.6);
+    const cityGlow = new THREE.PointLight(0x42bdd6, 48, 38, 1.7);
     cityGlow.position.set(-13, 8, 8);
-    const dangerGlow = new THREE.PointLight(0xd84b3d, 30, 32, 1.7);
+    const dangerGlow = new THREE.PointLight(0xd84b3d, 42, 34, 1.8);
     dangerGlow.position.set(14, 7, 5);
-    this.scene.add(cityGlow, dangerGlow, createCity());
+    const rimLight = new THREE.DirectionalLight(0x8bdfff, 2.2);
+    rimLight.position.set(4, 9, -18);
+    this.scene.add(cityGlow, dangerGlow, rimLight, createCity());
 
     this.tiga.position.set(-9, 0, 0);
-    this.tiga.rotation.y = Math.PI / 2;
+    this.tiga.rotation.y = Math.PI * 0.36;
     this.scene.add(this.tiga);
+  }
+
+  private createAtmosphere() {
+    const sky = new THREE.Mesh(
+      new THREE.SphereGeometry(110, 32, 18),
+      new THREE.ShaderMaterial({
+        side: THREE.BackSide,
+        depthWrite: false,
+        uniforms: {
+          topColor: { value: new THREE.Color(0x07111d) },
+          horizonColor: { value: new THREE.Color(0x26343c) },
+        },
+        vertexShader: `
+          varying vec3 vWorldPosition;
+          void main() {
+            vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+            vWorldPosition = worldPosition.xyz;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform vec3 topColor;
+          uniform vec3 horizonColor;
+          varying vec3 vWorldPosition;
+          void main() {
+            float height = normalize(vWorldPosition).y;
+            float mixValue = smoothstep(-0.08, 0.68, height);
+            gl_FragColor = vec4(mix(horizonColor, topColor, mixValue), 1.0);
+          }
+        `,
+      }),
+    );
+    this.scene.add(sky);
+
+    const starPositions: number[] = [];
+    for (let index = 0; index < 450; index += 1) {
+      const seed = Math.sin(index * 91.731) * 43758.5453;
+      const angle = (seed - Math.floor(seed)) * Math.PI * 2;
+      const height = 18 + ((seed * 17.3) % 1 + 1) % 1 * 54;
+      const radius = 78 + (((seed * 7.1) % 1 + 1) % 1) * 18;
+      starPositions.push(Math.cos(angle) * radius, height, Math.sin(angle) * radius);
+    }
+    const starGeometry = new THREE.BufferGeometry();
+    starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3));
+    const stars = new THREE.Points(
+      starGeometry,
+      new THREE.PointsMaterial({ color: 0xc5e3ed, size: 0.16, transparent: true, opacity: 0.72 }),
+    );
+    this.scene.add(stars);
   }
 
   private start() {
@@ -331,7 +397,7 @@ export class TigaGame {
     for (let index = 0; index < count; index += 1) {
       const object = createMonster(profile);
       object.position.set(9 + index * 2.2, 0, (index - (count - 1) / 2) * 2.1);
-      object.rotation.y = -Math.PI / 2;
+      object.rotation.y = -Math.PI * 0.36;
       this.scene.add(object);
       this.monsters.push({
         profile,
@@ -601,6 +667,7 @@ export class TigaGame {
     this.camera.position.y = this.camera.aspect < 0.65 ? 15 : this.camera.aspect < 0.9 ? 13 : 11.5;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height, false);
+    this.composer.setSize(width, height);
   }
 
   private animate = () => {
@@ -615,6 +682,6 @@ export class TigaGame {
     this.camera.position.x = THREE.MathUtils.lerp(this.camera.position.x, targetX, delta * 1.4);
     this.camera.lookAt(targetX, 4.15, 0);
     this.updateHud();
-    this.renderer.render(this.scene, this.camera);
+    this.composer.render();
   };
 }
