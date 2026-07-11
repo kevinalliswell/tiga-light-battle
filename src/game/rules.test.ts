@@ -3,6 +3,7 @@ import {
   FORM_STATS,
   canTransform,
   canUseAbility,
+  resolveDamage,
   resolveRevival,
 } from './rules';
 
@@ -59,5 +60,26 @@ describe('light revival', () => {
       healthRatio: 1,
       energyRatio: 1,
     });
+  });
+});
+
+describe('Gatanothor final battle', () => {
+  it.each([
+    ['power', 'punch'],
+    ['multi', 'kick'],
+    ['multi', 'zeperion'],
+    ['power', 'delacium'],
+    ['sky', 'runboldt'],
+    ['shining', 'zeperion'],
+  ] as const)('blocks %s form using %s', (form, ability) => {
+    expect(resolveDamage(form, ability, 'gatanothor')).toBe(0);
+  });
+
+  it('can only be damaged by shining super space-time lightning', () => {
+    expect(resolveDamage('shining', 'super-lightning', 'gatanothor')).toBeGreaterThan(0);
+  });
+
+  it('lets ordinary monsters take damage from form-appropriate attacks', () => {
+    expect(resolveDamage('power', 'delacium', 'ordinary')).toBeGreaterThan(0);
   });
 });

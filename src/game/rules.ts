@@ -63,12 +63,34 @@ const FORM_ABILITIES: Record<TigaForm, Ability[]> = {
   ],
 };
 
+const BASE_DAMAGE: Record<Ability, number> = {
+  punch: 10,
+  kick: 14,
+  boomerang: 8,
+  delacium: 34,
+  zeperion: 38,
+  runboldt: 30,
+  'super-lightning': 80,
+};
+
 export function canUseAbility(form: TigaForm, ability: Ability): boolean {
   return FORM_ABILITIES[form].includes(ability);
 }
 
 export function canTransform(form: TigaForm, lightMeter: number): boolean {
   return form !== 'shining' || lightMeter >= 100;
+}
+
+export function resolveDamage(
+  form: TigaForm,
+  ability: Ability,
+  target: 'ordinary' | 'gatanothor',
+): number {
+  if (!canUseAbility(form, ability)) return 0;
+  if (target === 'gatanothor') {
+    return form === 'shining' && ability === 'super-lightning' ? BASE_DAMAGE[ability] : 0;
+  }
+  return Math.round(BASE_DAMAGE[ability] * FORM_STATS[form].strength);
 }
 
 export function resolveRevival(reason: DefeatReason): {

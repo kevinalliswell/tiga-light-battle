@@ -5,3 +5,5 @@ dist/
 *.pem
 coverage/
 output/playwright/
+.playwright-cli/
+*.tsbuildinfo
