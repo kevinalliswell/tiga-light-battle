@@ -1,0 +1,84 @@
+export type TigaForm = 'power' | 'multi' | 'sky' | 'shining';
+export type Ability =
+  | 'punch'
+  | 'kick'
+  | 'boomerang'
+  | 'delacium'
+  | 'zeperion'
+  | 'runboldt'
+  | 'super-lightning';
+export type DefeatReason = 'exhausted' | 'defeated';
+
+export interface FormStats {
+  label: string;
+  strength: number;
+  speed: number;
+  color: number;
+  accent: number;
+}
+
+export const FORM_STATS: Record<TigaForm, FormStats> = {
+  power: {
+    label: '强力型',
+    strength: 1.45,
+    speed: 0.65,
+    color: 0xc52f2f,
+    accent: 0xe14d34,
+  },
+  multi: {
+    label: '复合型',
+    strength: 1,
+    speed: 1,
+    color: 0xb92d35,
+    accent: 0x6752aa,
+  },
+  sky: {
+    label: '空中型',
+    strength: 0.65,
+    speed: 1.45,
+    color: 0x5142a3,
+    accent: 0x6c62c9,
+  },
+  shining: {
+    label: '闪耀型',
+    strength: 1.75,
+    speed: 1.6,
+    color: 0xd8b43f,
+    accent: 0xffe588,
+  },
+};
+
+const FORM_ABILITIES: Record<TigaForm, Ability[]> = {
+  power: ['punch', 'kick', 'boomerang', 'delacium'],
+  multi: ['punch', 'kick', 'boomerang', 'zeperion'],
+  sky: ['punch', 'kick', 'boomerang', 'runboldt'],
+  shining: [
+    'punch',
+    'kick',
+    'boomerang',
+    'delacium',
+    'zeperion',
+    'runboldt',
+    'super-lightning',
+  ],
+};
+
+export function canUseAbility(form: TigaForm, ability: Ability): boolean {
+  return FORM_ABILITIES[form].includes(ability);
+}
+
+export function canTransform(form: TigaForm, lightMeter: number): boolean {
+  return form !== 'shining' || lightMeter >= 100;
+}
+
+export function resolveRevival(reason: DefeatReason): {
+  form: TigaForm;
+  healthRatio: number;
+  energyRatio: number;
+} {
+  if (reason === 'defeated') {
+    return { form: 'shining', healthRatio: 1, energyRatio: 1 };
+  }
+
+  return { form: 'multi', healthRatio: 0.45, energyRatio: 0.65 };
+}
