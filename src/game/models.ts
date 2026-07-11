@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createMonsterVisual } from './monsterModels';
 import { FORM_STATS, type TigaForm } from './rules';
 
 export { createTiga } from './tigaModel';
@@ -74,10 +75,6 @@ function mesh(
   return result;
 }
 
-function limb(radius: number, length: number, color: number) {
-  return mesh(new THREE.CapsuleGeometry(radius, length, 6, 10), color, 0.25, 0.52);
-}
-
 export function applyTigaForm(tiga: THREE.Group, form: TigaForm) {
   const stats = FORM_STATS[form];
   tiga.userData.form = form;
@@ -89,135 +86,36 @@ export function applyTigaForm(tiga: THREE.Group, form: TigaForm) {
   });
 }
 
-function addMonsterEyes(group: THREE.Group, y: number, z: number, spacing: number) {
-  const eyeMaterial = new THREE.MeshStandardMaterial({
-    color: 0xffc9a8,
-    emissive: 0xff3c16,
-    emissiveIntensity: 3,
-  });
-  for (const side of [-1, 1]) {
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), eyeMaterial);
-    eye.position.set(side * spacing, y, z);
-    eye.scale.set(1.2, 0.55, 0.4);
-    group.add(eye);
-  }
-}
-
 export function createMonster(profile: MonsterProfile): THREE.Group {
-  const monster = new THREE.Group();
-  monster.name = profile.name;
-  if (profile.id === 'gatanothor') return createGatanothor(monster, profile);
-  const body = mesh(new THREE.CapsuleGeometry(1.35, 3.1, 7, 14), profile.color, 0.08, 0.92);
-  body.position.y = 4.5;
-  body.scale.set(1, 1, 0.75);
-  monster.add(body);
-
-  const head = mesh(new THREE.SphereGeometry(1.08, 14, 10), profile.color, 0.08, 0.9);
-  head.position.set(0, 7.1, 0);
-  head.scale.set(0.88, 1, 0.76);
-  monster.add(head);
-  addMonsterEyes(monster, 7.25, 0.82, 0.37);
-
-  for (const side of [-1, 1]) {
-    const arm = limb(0.42, profile.id === 'kyrieloid' ? 3.5 : 2.8, profile.color);
-    arm.position.set(side * 1.5, 4.55, 0);
-    arm.rotation.z = side * 0.18;
-    monster.add(arm);
-    const leg = limb(0.58, 3.1, profile.color);
-    leg.position.set(side * 0.65, 1.7, 0);
-    monster.add(leg);
-  }
-
-  if (profile.id === 'golza') {
-    const horn = mesh(new THREE.ConeGeometry(0.38, 1.9, 7), profile.accent);
-    horn.position.set(0, 8.4, 0);
-    horn.rotation.z = -0.16;
-    monster.add(horn);
-    for (const side of [-1, 1]) {
-      const shoulder = mesh(new THREE.ConeGeometry(0.42, 1.4, 7), profile.accent);
-      shoulder.position.set(side * 1.35, 6.1, 0);
-      shoulder.rotation.z = side * 1.15;
-      monster.add(shoulder);
-    }
-  }
-
-  if (profile.id === 'melba') {
-    for (const side of [-1, 1]) {
-      const wing = mesh(new THREE.ConeGeometry(1.35, 4.8, 3), profile.accent, 0.05, 0.85);
-      wing.position.set(side * 2.45, 5.3, -0.4);
-      wing.rotation.z = side * 0.95;
-      wing.scale.z = 0.25;
-      monster.add(wing);
-    }
-    const beak = mesh(new THREE.ConeGeometry(0.5, 1.8, 6), profile.accent);
-    beak.position.set(0, 7, 1.2);
-    beak.rotation.x = Math.PI / 2;
-    monster.add(beak);
-  }
-
-  if (profile.id === 'kyrieloid') {
-    const face = mesh(new THREE.BoxGeometry(0.55, 1.4, 0.35), profile.accent);
-    face.position.set(0, 7, 0.9);
-    monster.add(face);
-    for (const side of [-1, 1]) {
-      const blade = mesh(new THREE.ConeGeometry(0.23, 1.4, 5), profile.accent);
-      blade.position.set(side * 1.55, 2.9, 0);
-      blade.rotation.z = side * 0.28;
-      monster.add(blade);
-    }
-  }
-
-  monster.scale.setScalar(profile.id === 'melba' ? 0.9 : 1);
-  return monster;
-}
-
-function createGatanothor(monster: THREE.Group, profile: MonsterProfile): THREE.Group {
-  const shell = mesh(new THREE.SphereGeometry(2.8, 20, 14), profile.color, 0.18, 0.88);
-  shell.position.set(0, 4.1, 0);
-  shell.scale.set(1.35, 0.95, 1);
-  monster.add(shell);
-
-  const face = mesh(new THREE.SphereGeometry(1.35, 16, 12), 0x25282c, 0.12, 0.8);
-  face.position.set(0, 5.4, 2.1);
-  face.scale.set(1.05, 0.75, 0.55);
-  monster.add(face);
-  addMonsterEyes(monster, 5.65, 2.78, 0.55);
-
-  const mainHorn = mesh(new THREE.ConeGeometry(0.55, 3.3, 7), profile.accent, 0.28, 0.7);
-  mainHorn.position.set(0, 7.2, 0.45);
-  mainHorn.rotation.x = -0.28;
-  monster.add(mainHorn);
-
-  for (const side of [-1, 1]) {
-    const tusk = mesh(new THREE.ConeGeometry(0.32, 2.1, 7), 0x777b78, 0.22, 0.72);
-    tusk.position.set(side * 1.2, 4.5, 2.7);
-    tusk.rotation.set(Math.PI / 2.45, 0, side * 0.18);
-    monster.add(tusk);
-  }
-
-  for (let index = 0; index < 8; index += 1) {
-    const tentacle = mesh(new THREE.CapsuleGeometry(0.34, 3.6, 6, 10), 0x202328, 0.05, 0.94);
-    const angle = (index / 8) * Math.PI * 2;
-    tentacle.name = `tentacle-${index}`;
-    tentacle.position.set(Math.cos(angle) * 2.8, 1.45, Math.sin(angle) * 1.7);
-    tentacle.rotation.z = Math.cos(angle) * 0.65;
-    tentacle.rotation.x = Math.sin(angle) * 0.5;
-    monster.add(tentacle);
-  }
-
-  monster.scale.setScalar(1.12);
-  return monster;
+  return createMonsterVisual(profile);
 }
 
 function addWindowGrid(building: THREE.Mesh, width: number, height: number, depth: number) {
   const windows = new THREE.Group();
-  const windowMaterial = new THREE.MeshBasicMaterial({ color: 0x9ac5ce });
+  const windowMaterials = [
+    new THREE.MeshStandardMaterial({
+      color: 0xb9e2e8,
+      emissive: 0x75b7c1,
+      emissiveIntensity: 1.25,
+      roughness: 0.42,
+    }),
+    new THREE.MeshStandardMaterial({
+      color: 0xf2d49d,
+      emissive: 0xc28e42,
+      emissiveIntensity: 1.15,
+      roughness: 0.46,
+    }),
+    new THREE.MeshStandardMaterial({ color: 0x263137, roughness: 0.7 }),
+  ];
   const columns = Math.max(2, Math.floor(width / 1.4));
   const rows = Math.max(2, Math.floor(height / 1.5));
   for (let row = 0; row < rows; row += 1) {
     for (let column = 0; column < columns; column += 1) {
       if ((row + column) % 3 === 0) continue;
-      const window = new THREE.Mesh(new THREE.PlaneGeometry(0.32, 0.42), windowMaterial);
+      const window = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.34, 0.45),
+        windowMaterials[(row * 7 + column * 3) % windowMaterials.length],
+      );
       window.position.set(
         -width / 2 + ((column + 0.7) * width) / columns,
         -height / 2 + ((row + 0.7) * height) / rows,
@@ -226,16 +124,68 @@ function addWindowGrid(building: THREE.Mesh, width: number, height: number, dept
       windows.add(window);
     }
   }
+
+  const sideColumns = Math.max(2, Math.floor(depth / 1.5));
+  for (let row = 0; row < rows; row += 1) {
+    for (let column = 0; column < sideColumns; column += 1) {
+      if ((row * 2 + column) % 4 === 0) continue;
+      const window = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.34, 0.45),
+        windowMaterials[(row * 5 + column * 2 + 1) % windowMaterials.length],
+      );
+      window.position.set(
+        width / 2 + 0.012,
+        -height / 2 + ((row + 0.7) * height) / rows,
+        -depth / 2 + ((column + 0.7) * depth) / sideColumns,
+      );
+      window.rotation.y = Math.PI / 2;
+      windows.add(window);
+    }
+  }
   building.add(windows);
+}
+
+function asphaltBumpTexture() {
+  const size = 64;
+  const data = new Uint8Array(size * size * 4);
+  for (let index = 0; index < size * size; index += 1) {
+    const grain = Math.sin(index * 17.31) * Math.cos(index * 0.731);
+    const value = Math.round(128 + grain * 54);
+    const offset = index * 4;
+    data[offset] = value;
+    data[offset + 1] = value;
+    data[offset + 2] = value;
+    data[offset + 3] = 255;
+  }
+  const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(18, 10);
+  texture.needsUpdate = true;
+  return texture;
 }
 
 export function createCity(): THREE.Group {
   const city = new THREE.Group();
-  const roadMaterial = material(0x1b2024, 0, 0.96);
+  const roadMaterial = new THREE.MeshStandardMaterial({
+    color: 0x171d21,
+    roughness: 0.94,
+    metalness: 0.02,
+    bumpMap: asphaltBumpTexture(),
+    bumpScale: 0.035,
+  });
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(90, 48), roadMaterial);
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   city.add(ground);
+
+  const curbMaterial = material(0x697278, 0.05, 0.72);
+  for (const z of [-6.8, 6.8]) {
+    const sidewalk = new THREE.Mesh(new THREE.BoxGeometry(90, 0.22, 2.1), curbMaterial);
+    sidewalk.position.set(0, 0.08, z);
+    sidewalk.receiveShadow = true;
+    city.add(sidewalk);
+  }
 
   const roadLineMaterial = new THREE.MeshBasicMaterial({ color: 0xc9aa5a });
   for (let x = -36; x <= 36; x += 6) {
@@ -266,7 +216,60 @@ export function createCity(): THREE.Group {
       building.position.set(x, height / 2, z);
       addWindowGrid(building, width, height, depth);
       city.add(building);
+
+      const roofBase = mesh(
+        new THREE.BoxGeometry(width * 0.7, 0.28, depth * 0.65),
+        0x32393d,
+        0.18,
+        0.68,
+      );
+      roofBase.position.set(x, height + 0.14, z);
+      city.add(roofBase);
+
+      if (index % 2 === 0) {
+        const utility = mesh(
+          new THREE.BoxGeometry(width * 0.28, 0.72, depth * 0.3),
+          0x4a5256,
+          0.24,
+          0.58,
+        );
+        utility.position.set(x + width * 0.16, height + 0.62, z);
+        city.add(utility);
+      }
+
+      if (index % 3 === 0) {
+        const antenna = mesh(new THREE.CylinderGeometry(0.035, 0.05, 2.5, 8), 0x8a969a, 0.5, 0.4);
+        antenna.position.set(x - width * 0.18, height + 1.35, z);
+        city.add(antenna);
+        const beacon = new THREE.Mesh(
+          new THREE.SphereGeometry(0.08, 10, 8),
+          new THREE.MeshStandardMaterial({
+            color: 0xff795f,
+            emissive: 0xff2f18,
+            emissiveIntensity: 3,
+          }),
+        );
+        beacon.position.set(x - width * 0.18, height + 2.62, z);
+        city.add(beacon);
+      }
       index += 1;
+    }
+  }
+
+  for (let x = -30; x <= 30; x += 10) {
+    for (const z of [-5.6, 5.6]) {
+      const post = mesh(new THREE.CylinderGeometry(0.06, 0.09, 2.1, 10), 0x343b3f, 0.35, 0.5);
+      post.position.set(x, 1.05, z);
+      const lamp = new THREE.Mesh(
+        new THREE.SphereGeometry(0.12, 12, 9),
+        new THREE.MeshStandardMaterial({
+          color: 0xffe4a8,
+          emissive: 0xffc55a,
+          emissiveIntensity: 2.2,
+        }),
+      );
+      lamp.position.set(x, 2.08, z);
+      city.add(post, lamp);
     }
   }
 
