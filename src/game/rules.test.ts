@@ -67,15 +67,23 @@ describe('Gatanothor final battle', () => {
   it.each([
     ['power', 'punch'],
     ['multi', 'kick'],
-    ['multi', 'zeperion'],
     ['power', 'delacium'],
     ['sky', 'runboldt'],
-    ['shining', 'zeperion'],
   ] as const)('blocks %s form using %s', (form, ability) => {
     expect(resolveDamage(form, ability, 'gatanothor')).toBe(0);
   });
 
-  it('can only be damaged by shining super space-time lightning', () => {
+  it('takes damage from multi form Zeperion beam', () => {
+    expect(resolveDamage('multi', 'zeperion', 'gatanothor')).toBeGreaterThan(0);
+  });
+
+  it('takes greater Zeperion damage from shining form', () => {
+    expect(resolveDamage('shining', 'zeperion', 'gatanothor')).toBeGreaterThan(
+      resolveDamage('multi', 'zeperion', 'gatanothor'),
+    );
+  });
+
+  it('can still be damaged by shining super space-time lightning', () => {
     expect(resolveDamage('shining', 'super-lightning', 'gatanothor')).toBeGreaterThan(0);
   });
 

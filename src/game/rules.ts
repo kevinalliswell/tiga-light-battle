@@ -88,6 +88,9 @@ export function resolveDamage(
 ): number {
   if (!canUseAbility(form, ability)) return 0;
   if (target === 'gatanothor') {
+    if (ability === 'zeperion') {
+      return Math.round(BASE_DAMAGE[ability] * FORM_STATS[form].strength);
+    }
     return form === 'shining' && ability === 'super-lightning' ? BASE_DAMAGE[ability] : 0;
   }
   return Math.round(BASE_DAMAGE[ability] * FORM_STATS[form].strength);

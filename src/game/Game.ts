@@ -340,7 +340,7 @@ export class TigaGame {
       this.lightMeter = 100;
       this.scene.background = new THREE.Color(0x050608);
       this.scene.fog = new THREE.FogExp2(0x080a0d, 0.026);
-      this.setMessage('最终决战：只有闪耀型的超级时空闪电能够打破黑暗', 4.5);
+      this.setMessage('最终决战：哉佩利敖光线和闪耀型超级时空闪电能够击穿防御', 4.5);
     } else if (count > 1) {
       this.setMessage(`${profile.name}发生克隆：${count}只怪兽同时出现`, 2.6);
     } else {
