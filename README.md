@@ -9,7 +9,7 @@
 环境要求：Node.js 20 或更高版本。
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/kevinalliswell/tiga-light-battle.git
 cd tiga-light-battle
 npm ci
 npm run dev
