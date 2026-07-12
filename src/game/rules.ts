@@ -102,6 +102,12 @@ export function canEnterFlight(holdSeconds: number): boolean {
   return holdSeconds >= FLIGHT_HOLD_SECONDS;
 }
 
+export const FLIGHT_TAP_COUNT = 3;
+
+export function canEnterFlightFromTaps(pressCount: number): boolean {
+  return pressCount >= FLIGHT_TAP_COUNT;
+}
+
 export function canTransform(
   form: TigaForm,
   lightMeter: number,

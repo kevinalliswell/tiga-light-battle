@@ -58,15 +58,15 @@ interface TigaSurfaces {
 function createArm(side: number, surfaces: TigaSurfaces) {
   const arm = new THREE.Group();
   arm.name = side < 0 ? 'left-arm' : 'right-arm';
-  arm.position.set(side * 1.2, 5.9, 0);
+  arm.position.set(side * 1.32, 5.88, 0);
   arm.rotation.z = -side * 0.1;
 
-  const shoulder = part(new THREE.SphereGeometry(0.43, 28, 20), surfaces.silver);
-  shoulder.scale.set(1.08, 0.94, 0.9);
+  const shoulder = part(new THREE.SphereGeometry(0.5, 30, 22), surfaces.silver);
+  shoulder.scale.set(1.16, 0.94, 0.92);
   arm.add(shoulder);
 
   const shoulderMark = formPart(
-    new THREE.SphereGeometry(0.43, 22, 14),
+    new THREE.SphereGeometry(0.5, 24, 16),
     surfaces.red,
     'form-color',
   );
@@ -75,7 +75,7 @@ function createArm(side: number, surfaces: TigaSurfaces) {
   arm.add(shoulderMark);
 
   const upperArm = part(
-    new THREE.CapsuleGeometry(0.34, 0.64, 6, 18),
+    new THREE.CapsuleGeometry(0.38, 0.72, 7, 20),
     surfaces.silver,
     [0, -0.78, 0],
     [1, 1, 0.9],
@@ -84,7 +84,7 @@ function createArm(side: number, surfaces: TigaSurfaces) {
   arm.add(upperArm);
 
   const upperStripe = formPart(
-    new THREE.CapsuleGeometry(0.09, 0.7, 6, 14),
+    new THREE.CapsuleGeometry(0.1, 0.76, 6, 16),
     surfaces.accent,
     'form-accent',
   );
@@ -93,7 +93,7 @@ function createArm(side: number, surfaces: TigaSurfaces) {
   arm.add(upperStripe);
 
   const elbow = part(
-    new THREE.SphereGeometry(0.31, 20, 14),
+    new THREE.SphereGeometry(0.34, 22, 16),
     surfaces.silver,
     [0, -1.46, 0],
     [1, 0.84, 0.9],
@@ -101,7 +101,7 @@ function createArm(side: number, surfaces: TigaSurfaces) {
   arm.add(elbow);
 
   const forearm = part(
-    new THREE.CapsuleGeometry(0.33, 0.64, 6, 18),
+    new THREE.CapsuleGeometry(0.37, 0.72, 7, 20),
     surfaces.silver,
     [0, -2.06, 0],
     [1, 1, 0.92],
@@ -110,7 +110,7 @@ function createArm(side: number, surfaces: TigaSurfaces) {
   arm.add(forearm);
 
   const cuff = formPart(
-    new THREE.CylinderGeometry(0.355, 0.33, 0.52, 20),
+    new THREE.CylinderGeometry(0.39, 0.36, 0.54, 22),
     surfaces.red,
     'form-color',
   );
@@ -118,16 +118,16 @@ function createArm(side: number, surfaces: TigaSurfaces) {
   arm.add(cuff);
 
   const hand = part(
-    new THREE.SphereGeometry(0.31, 20, 14),
+    new THREE.SphereGeometry(0.36, 22, 16),
     surfaces.silver,
-    [0, -2.82, 0.04],
-    [0.82, 1.12, 0.72],
+    [0, -2.86, 0.04],
+    [0.88, 1.16, 0.78],
   );
   hand.name = side < 0 ? 'left-hand' : 'right-hand';
   arm.add(hand);
 
   const thumb = part(
-    new THREE.SphereGeometry(0.15, 14, 10),
+    new THREE.SphereGeometry(0.16, 16, 12),
     surfaces.silver,
     [side * 0.2, -2.78, 0.22],
     [0.8, 1, 0.75],
@@ -140,10 +140,10 @@ function createArm(side: number, surfaces: TigaSurfaces) {
 function createLeg(side: number, surfaces: TigaSurfaces) {
   const leg = new THREE.Group();
   leg.name = side < 0 ? 'left-leg' : 'right-leg';
-  leg.position.set(side * 0.52, 3.35, 0);
+  leg.position.set(side * 0.62, 3.35, 0);
 
   const thigh = part(
-    new THREE.CapsuleGeometry(0.45, 0.82, 6, 18),
+    new THREE.CapsuleGeometry(0.5, 0.88, 7, 20),
     surfaces.silver,
     [0, -0.82, 0],
     [1, 1, 0.9],
@@ -152,7 +152,7 @@ function createLeg(side: number, surfaces: TigaSurfaces) {
   leg.add(thigh);
 
   const thighStripe = formPart(
-    new THREE.CapsuleGeometry(0.1, 1.02, 6, 14),
+    new THREE.CapsuleGeometry(0.11, 1.08, 6, 16),
     surfaces.accent,
     'form-accent',
   );
@@ -162,7 +162,7 @@ function createLeg(side: number, surfaces: TigaSurfaces) {
   leg.add(thighStripe);
 
   const knee = part(
-    new THREE.SphereGeometry(0.4, 20, 14),
+    new THREE.SphereGeometry(0.43, 22, 16),
     surfaces.silver,
     [0, -1.61, 0],
     [0.9, 0.78, 0.84],
@@ -170,7 +170,7 @@ function createLeg(side: number, surfaces: TigaSurfaces) {
   leg.add(knee);
 
   const shin = part(
-    new THREE.CapsuleGeometry(0.38, 0.82, 6, 18),
+    new THREE.CapsuleGeometry(0.43, 0.9, 7, 20),
     surfaces.silver,
     [0, -2.36, 0],
     [1, 1, 0.88],
@@ -179,17 +179,17 @@ function createLeg(side: number, surfaces: TigaSurfaces) {
   leg.add(shin);
 
   const bootCuff = formPart(
-    new THREE.CylinderGeometry(0.42, 0.38, 0.7, 22),
+    new THREE.CylinderGeometry(0.46, 0.41, 0.72, 24),
     surfaces.red,
     'form-color',
   );
   bootCuff.position.y = -2.82;
   leg.add(bootCuff);
 
-  const foot = formPart(new THREE.SphereGeometry(0.48, 22, 15), surfaces.red, 'form-color');
+  const foot = formPart(new THREE.SphereGeometry(0.54, 24, 17), surfaces.red, 'form-color');
   foot.name = side < 0 ? 'left-foot' : 'right-foot';
-  foot.position.set(0, -3.24, 0.27);
-  foot.scale.set(0.78, 0.54, 1.25);
+  foot.position.set(0, -3.3, 0.3);
+  foot.scale.set(0.82, 0.56, 1.32);
   leg.add(foot);
   return leg;
 }
@@ -203,23 +203,23 @@ export function createTiga(): THREE.Group {
     silver: new THREE.MeshPhysicalMaterial({
       color: 0xa4b0b5,
       metalness: 0.01,
-      roughness: 0.68,
-      clearcoat: 0.06,
-      clearcoatRoughness: 0.56,
+      roughness: 0.56,
+      clearcoat: 0.12,
+      clearcoatRoughness: 0.48,
       bumpMap: fabric,
-      bumpScale: 0.018,
+      bumpScale: 0.016,
       sheen: 0.24,
       sheenColor: 0x64747c,
       sheenRoughness: 0.78,
     }),
     darkSilver: new THREE.MeshPhysicalMaterial({
-      color: 0x536168,
+      color: 0x68777d,
       metalness: 0.01,
-      roughness: 0.72,
-      clearcoat: 0.05,
-      clearcoatRoughness: 0.62,
+      roughness: 0.64,
+      clearcoat: 0.09,
+      clearcoatRoughness: 0.54,
       bumpMap: fabric,
-      bumpScale: 0.022,
+      bumpScale: 0.018,
       sheen: 0.18,
       sheenColor: 0x46545b,
       sheenRoughness: 0.82,
@@ -251,10 +251,10 @@ export function createTiga(): THREE.Group {
   };
 
   const torso = part(
-    new THREE.CapsuleGeometry(0.86, 2.05, 8, 24),
+    new THREE.CapsuleGeometry(0.96, 2.15, 10, 28),
     surfaces.silver,
     [0, 4.72, 0],
-    [1.1, 1, 0.72],
+    [1.18, 1, 0.76],
   );
   const neck = part(
     new THREE.CylinderGeometry(0.42, 0.5, 0.55, 22),
@@ -263,19 +263,19 @@ export function createTiga(): THREE.Group {
     [1, 1, 0.82],
   );
   const chestPlate = part(
-    new THREE.SphereGeometry(1.13, 32, 22),
+    new THREE.SphereGeometry(1.24, 36, 26),
     surfaces.silver,
-    [0, 5.48, 0.58],
-    [0.9, 0.7, 0.16],
+    [0, 5.48, 0.6],
+    [0.98, 0.74, 0.18],
   );
   const pelvis = part(
-    new THREE.SphereGeometry(0.92, 28, 18),
+    new THREE.SphereGeometry(1, 32, 22),
     surfaces.silver,
     [0, 3.72, 0],
-    [0.92, 0.48, 0.7],
+    [1, 0.5, 0.74],
   );
   const waistBand = part(
-    new THREE.TorusGeometry(0.76, 0.09, 12, 32),
+    new THREE.TorusGeometry(0.84, 0.1, 14, 36),
     surfaces.accent,
     [0, 3.9, 0],
   );
@@ -313,22 +313,22 @@ export function createTiga(): THREE.Group {
   tiga.add(collar);
 
   const head = part(
-    new THREE.CapsuleGeometry(0.63, 0.46, 7, 22),
+    new THREE.CapsuleGeometry(0.66, 0.5, 8, 26),
     surfaces.silver,
     [0, 7.42, 0],
-    [0.9, 1.08, 0.9],
+    [0.94, 1.06, 0.92],
   );
   const jaw = part(
-    new THREE.SphereGeometry(0.58, 26, 18),
+    new THREE.SphereGeometry(0.62, 30, 22),
     surfaces.silver,
-    [0, 7.08, 0.12],
-    [0.88, 0.62, 0.86],
+    [0, 7.06, 0.14],
+    [0.92, 0.64, 0.88],
   );
   const crown = part(
-    new THREE.ConeGeometry(0.25, 1.18, 8),
+    new THREE.ConeGeometry(0.22, 0.9, 6),
     surfaces.silver,
-    [0, 8.36, 0.02],
-    [1, 1, 0.82],
+    [0, 8.22, 0.02],
+    [0.88, 1, 0.76],
   );
   tiga.add(head, jaw, crown);
 

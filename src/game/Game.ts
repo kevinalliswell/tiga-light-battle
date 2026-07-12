@@ -21,6 +21,7 @@ import {
 import {
   FORM_STATS,
   canEnterFlight,
+  canEnterFlightFromTaps,
   canUseFlashlight,
   canTransform,
   canUseAbility,
@@ -88,6 +89,7 @@ const KEY_ACTIONS: Record<string, GameAction> = {
   '4': 'form-shining',
   '5': 'evolution-ray',
   '6': 'demogea-finish',
+  '7': 'land',
   o: 'revive',
 };
 
@@ -130,6 +132,8 @@ export class TigaGame {
   private attackPose: Ability | 'demogea-finish' = 'punch';
   private jumpVelocity = 0;
   private jumpHoldTimer = 0;
+  private flightTapCount = 0;
+  private flightTapWindow = 0;
   private flying = false;
   private shiningUnlocked = false;
   private spawnTimer = 0;
@@ -214,7 +218,7 @@ export class TigaGame {
     this.scene.add(cityGlow, dangerGlow, rimLight, createCity());
 
     this.tiga.position.set(-9, 0, 0);
-    this.tiga.rotation.y = Math.PI * 0.36;
+    this.tiga.rotation.y = Math.PI * 0.26;
     this.scene.add(this.tiga);
   }
 
@@ -303,12 +307,13 @@ export class TigaGame {
       else this.heldActions.delete(action);
       if (action === 'jump' && pressed) {
         if (this.flying) {
-          this.flying = false;
-          this.jumpHoldTimer = 0;
-          this.jumpVelocity = -1.5;
-          this.setMessage('迪迦返回地面', 1.2);
+          this.landFromFlight();
         } else {
           this.jumpHoldTimer = 0;
+          if (this.flightTapWindow <= 0) this.flightTapCount = 0;
+          this.flightTapCount += 1;
+          this.flightTapWindow = 1.25;
+          if (canEnterFlightFromTaps(this.flightTapCount)) this.enterFlightMode();
         }
       }
       if (action === 'jump' && !pressed && !this.flying && this.jumpHoldTimer < 3 && this.tiga.position.y <= 0.01) {
@@ -320,6 +325,10 @@ export class TigaGame {
       return;
     }
     if (!pressed || !this.started) return;
+    if (action === 'land') {
+      this.landFromFlight();
+      return;
+    }
     if (action === 'revive') {
       if (this.defeatReason) this.beginRevival();
       else this.beginFlashlightRecharge();
@@ -575,6 +584,10 @@ export class TigaGame {
     if (this.messageTimer > 0) this.messageTimer -= delta;
     if (this.attackCooldown > 0) this.attackCooldown -= delta;
     if (this.attackPoseTimer > 0) this.attackPoseTimer -= delta;
+    if (this.flightTapWindow > 0) {
+      this.flightTapWindow -= delta;
+      if (this.flightTapWindow <= 0) this.flightTapCount = 0;
+    }
 
     if (this.defeatReason) {
       if (this.reviving) {
@@ -644,6 +657,16 @@ export class TigaGame {
     this.effects.impact(this.tiga.position.clone().add(new THREE.Vector3(0, 4.5, 0)), 0x8feaff, 2.2);
     this.audio?.play('transform');
     this.setMessage('空战开始：城市缩小，按 Q/W/Z/X/C/D 发起空中攻击', 2.6);
+  }
+
+  private landFromFlight() {
+    if (!this.flying || this.defeatReason) return;
+    this.flying = false;
+    this.flightTapCount = 0;
+    this.flightTapWindow = 0;
+    this.jumpHoldTimer = 0;
+    this.jumpVelocity = -3.8;
+    this.setMessage('7：迪迦返回地面', 1.2);
   }
 
   private updateMonsters(delta: number) {
