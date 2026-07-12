@@ -45,8 +45,8 @@ export const FORM_STATS: Record<TigaForm, FormStats> = {
   },
   shining: {
     label: '闪耀型',
-    strength: 1.75,
-    speed: 1.6,
+    strength: 1.95,
+    speed: 1.9,
     color: 0xd8b43f,
     accent: 0xffe588,
   },

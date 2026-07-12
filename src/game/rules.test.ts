@@ -23,6 +23,13 @@ describe('Tiga forms', () => {
     expect(FORM_STATS.sky.speed).toBeGreaterThan(FORM_STATS.multi.speed);
     expect(FORM_STATS.sky.strength).toBeLessThan(FORM_STATS.multi.strength);
   });
+
+  it('gives shining form a clear strength and speed lead', () => {
+    expect(FORM_STATS.shining.strength).toBeGreaterThan(FORM_STATS.power.strength + 0.4);
+    expect(FORM_STATS.shining.strength).toBeGreaterThan(FORM_STATS.sky.strength + 0.4);
+    expect(FORM_STATS.shining.speed).toBeGreaterThan(FORM_STATS.power.speed + 0.4);
+    expect(FORM_STATS.shining.speed).toBeGreaterThan(FORM_STATS.sky.speed + 0.4);
+  });
 });
 
 describe('form abilities', () => {
