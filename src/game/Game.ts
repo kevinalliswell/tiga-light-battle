@@ -6,6 +6,7 @@ import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import type { GameAction, Hud, HudSnapshot } from '../ui/hud';
+import { BattleAudio } from './audio';
 import { Effects } from './effects';
 import {
   DEMOGEA_PROFILE,
@@ -102,7 +103,7 @@ export class TigaGame {
     { color?: THREE.Color; emissive?: THREE.Color; emissiveIntensity?: number }
   >();
 
-  private audio: AudioContext | null = null;
+  private audio: BattleAudio | null = null;
   private started = false;
   private form: TigaForm = 'multi';
   private health = 100;
@@ -262,8 +263,9 @@ export class TigaGame {
     if (this.started) return;
     this.started = true;
     this.tutorialStage = 'move';
-    this.audio = new AudioContext();
-    this.audio.resume().catch(() => undefined);
+    this.audio = new BattleAudio();
+    this.audio.start();
+    this.audio.play('start');
     this.setMessage('教学开始：先按住 ← 或 → 让迪迦移动', 3.2);
     this.tone(220, 0.12, 'sawtooth');
     this.tone(440, 0.18, 'triangle', 0.1);
@@ -327,6 +329,7 @@ export class TigaGame {
     if (nextForm === 'shining') {
       this.lightMeter = 0;
       this.effects.impact(this.tiga.position.clone().add(new THREE.Vector3(0, 4.6, 0)), 0xffd866, 4.2);
+      this.audio?.play('transform');
       this.tone(640, 0.36, 'sine');
     }
     this.setForm(nextForm);
@@ -366,6 +369,7 @@ export class TigaGame {
     this.attackCooldown = ability === 'punch' ? 0.34 : ability === 'kick' ? 0.48 : 0.82;
     this.attackPoseTimer = this.attackCooldown;
     this.attackPose = ability;
+    this.audio?.play(ability);
     const start = this.tiga.position.clone().add(new THREE.Vector3(1.25, 5.1, 0));
 
     targets.forEach((target) => {
@@ -380,6 +384,7 @@ export class TigaGame {
       const damage = resolveDamage(this.form, ability, targetKind);
       if (damage === 0) {
         this.effects.shield(end);
+        this.audio?.play('shield');
         this.setMessage(
           target.profile.id === 'demogea'
             ? '迪莫杰厄的防御挡住了所有攻击，只有 6 键体内爆破有效'
@@ -398,6 +403,7 @@ export class TigaGame {
       if (ability === 'punch' || ability === 'kick') this.completeTutorialAction('attack');
       if (ability === 'delacium') this.completeTutorialAction('light');
       this.tone(ability === 'super-lightning' ? 760 : 150 + damage * 5, 0.12, 'sawtooth');
+      this.audio?.play('monster-hit');
       if (target.health <= 0) this.defeatMonster(target);
     });
     this.updateHud();
@@ -426,6 +432,7 @@ export class TigaGame {
     this.attackCooldown = 1.2;
     this.attackPoseTimer = this.attackCooldown;
     this.attackPose = 'demogea-finish';
+    this.audio?.play('demogea-burst');
     const start = this.tiga.position.clone().add(new THREE.Vector3(1.25, 5.1, 0));
     const end = target.object.position.clone().add(new THREE.Vector3(0, 4.8, 0));
     this.effects.demogeaBurst(start, end);
@@ -466,6 +473,7 @@ export class TigaGame {
     if (monster.defeated) return;
     monster.defeated = true;
     monster.stunned = 99;
+    this.audio?.play(monster.profile.id === 'demogea' ? 'explosion' : 'defeat');
     this.effects.impact(monster.object.position.clone().add(new THREE.Vector3(0, 4, 0)), 0xff784c, 3.5);
     if (monster.profile.id === 'gatanothor') {
       this.spawnTimer = 2.8;
@@ -611,6 +619,7 @@ export class TigaGame {
         this.health = Math.max(0, this.health - damage);
         monster.attackCooldown = monster.profile.id === 'melba' ? 1.05 : 1.55;
         this.effects.impact(this.tiga.position.clone().add(new THREE.Vector3(0, 4.5, 0)), 0xff5d42, 1.15);
+        this.audio?.play('monster-attack');
         this.setMessage(guarding ? '防御成功，伤害降低' : `${monster.profile.name}发动攻击`, 0.85);
         this.tone(78, 0.15, 'sawtooth');
       }
@@ -711,6 +720,7 @@ export class TigaGame {
       999,
     );
     this.tone(55, 0.7, 'sawtooth');
+    this.audio?.play('stone');
     this.updateHud();
   }
 
@@ -725,6 +735,7 @@ export class TigaGame {
       2.4,
     );
     this.tone(320, 1.6, 'sine');
+    this.audio?.play('revive');
     this.updateHud();
   }
 
@@ -758,6 +769,7 @@ export class TigaGame {
     this.effects.revival(target, false);
     this.setMessage('人们打开手电筒，为迪迦补充能量', 1.5);
     this.tone(320, 1, 'sine');
+    this.audio?.play('flashlight');
   }
 
   private finishFlashlightRecharge() {
@@ -848,17 +860,7 @@ export class TigaGame {
   }
 
   private tone(frequency: number, duration: number, type: OscillatorType, delay = 0) {
-    if (!this.audio) return;
-    const oscillator = this.audio.createOscillator();
-    const gain = this.audio.createGain();
-    const startAt = this.audio.currentTime + delay;
-    oscillator.type = type;
-    oscillator.frequency.setValueAtTime(frequency, startAt);
-    gain.gain.setValueAtTime(0.045, startAt);
-    gain.gain.exponentialRampToValueAtTime(0.001, startAt + duration);
-    oscillator.connect(gain).connect(this.audio.destination);
-    oscillator.start(startAt);
-    oscillator.stop(startAt + duration);
+    this.audio?.tone(frequency, duration, type, delay);
   }
 
   private resize() {
