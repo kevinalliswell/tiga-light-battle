@@ -25,6 +25,29 @@ function formPart(
   return result;
 }
 
+function fabricBumpTexture() {
+  const size = 96;
+  const data = new Uint8Array(size * size * 4);
+  for (let index = 0; index < size * size; index += 1) {
+    const x = index % size;
+    const y = Math.floor(index / size);
+    const warp = Math.sin(x * 0.68) * Math.cos(y * 0.54);
+    const weave = (x % 6 === 0 ? 18 : 0) + (y % 6 === 0 ? 14 : 0);
+    const value = Math.max(74, Math.min(190, Math.round(128 + warp * 16 + weave)));
+    const offset = index * 4;
+    data[offset] = value;
+    data[offset + 1] = value;
+    data[offset + 2] = value;
+    data[offset + 3] = 255;
+  }
+  const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(16, 16);
+  texture.needsUpdate = true;
+  return texture;
+}
+
 interface TigaSurfaces {
   silver: THREE.MeshPhysicalMaterial;
   darkSilver: THREE.MeshPhysicalMaterial;
@@ -159,35 +182,56 @@ function createLeg(side: number, surfaces: TigaSurfaces) {
 export function createTiga(): THREE.Group {
   const tiga = new THREE.Group();
   tiga.name = 'tiga';
+  const fabric = fabricBumpTexture();
 
   const surfaces: TigaSurfaces = {
     silver: new THREE.MeshPhysicalMaterial({
-      color: 0xaebbc3,
-      metalness: 0.84,
-      roughness: 0.19,
-      clearcoat: 0.58,
-      clearcoatRoughness: 0.16,
+      color: 0xb4bec3,
+      metalness: 0.12,
+      roughness: 0.43,
+      clearcoat: 0.18,
+      clearcoatRoughness: 0.34,
+      bumpMap: fabric,
+      bumpScale: 0.025,
+      sheen: 0.18,
+      sheenColor: 0x56656e,
+      sheenRoughness: 0.7,
     }),
     darkSilver: new THREE.MeshPhysicalMaterial({
-      color: 0x4c5962,
-      metalness: 0.72,
-      roughness: 0.27,
-      clearcoat: 0.3,
-      clearcoatRoughness: 0.22,
+      color: 0x4f5d64,
+      metalness: 0.1,
+      roughness: 0.52,
+      clearcoat: 0.12,
+      clearcoatRoughness: 0.42,
+      bumpMap: fabric,
+      bumpScale: 0.035,
+      sheen: 0.12,
+      sheenColor: 0x3f4c53,
+      sheenRoughness: 0.78,
     }),
     red: new THREE.MeshPhysicalMaterial({
       color: FORM_STATS.multi.color,
-      metalness: 0.24,
-      roughness: 0.34,
-      clearcoat: 0.32,
-      clearcoatRoughness: 0.2,
+      metalness: 0.08,
+      roughness: 0.4,
+      clearcoat: 0.16,
+      clearcoatRoughness: 0.32,
+      bumpMap: fabric,
+      bumpScale: 0.03,
+      sheen: 0.1,
+      sheenColor: 0x5b1c27,
+      sheenRoughness: 0.74,
     }),
     accent: new THREE.MeshPhysicalMaterial({
       color: FORM_STATS.multi.accent,
-      metalness: 0.2,
-      roughness: 0.36,
-      clearcoat: 0.28,
-      clearcoatRoughness: 0.22,
+      metalness: 0.06,
+      roughness: 0.42,
+      clearcoat: 0.14,
+      clearcoatRoughness: 0.36,
+      bumpMap: fabric,
+      bumpScale: 0.03,
+      sheen: 0.12,
+      sheenColor: 0x3e345c,
+      sheenRoughness: 0.76,
     }),
   };
 
