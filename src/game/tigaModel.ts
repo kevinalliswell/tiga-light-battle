@@ -80,6 +80,7 @@ function createArm(side: number, surfaces: TigaSurfaces) {
     [0, -0.78, 0],
     [1, 1, 0.9],
   );
+  upperArm.name = side < 0 ? 'left-upper-arm' : 'right-upper-arm';
   arm.add(upperArm);
 
   const upperStripe = formPart(
@@ -105,6 +106,7 @@ function createArm(side: number, surfaces: TigaSurfaces) {
     [0, -2.06, 0],
     [1, 1, 0.92],
   );
+  forearm.name = side < 0 ? 'left-forearm' : 'right-forearm';
   arm.add(forearm);
 
   const cuff = formPart(
@@ -121,7 +123,17 @@ function createArm(side: number, surfaces: TigaSurfaces) {
     [0, -2.82, 0.04],
     [0.82, 1.12, 0.72],
   );
+  hand.name = side < 0 ? 'left-hand' : 'right-hand';
   arm.add(hand);
+
+  const thumb = part(
+    new THREE.SphereGeometry(0.15, 14, 10),
+    surfaces.silver,
+    [side * 0.2, -2.78, 0.22],
+    [0.8, 1, 0.75],
+  );
+  thumb.name = side < 0 ? 'left-thumb' : 'right-thumb';
+  arm.add(thumb);
   return arm;
 }
 
@@ -136,6 +148,7 @@ function createLeg(side: number, surfaces: TigaSurfaces) {
     [0, -0.82, 0],
     [1, 1, 0.9],
   );
+  thigh.name = side < 0 ? 'left-thigh' : 'right-thigh';
   leg.add(thigh);
 
   const thighStripe = formPart(
@@ -162,6 +175,7 @@ function createLeg(side: number, surfaces: TigaSurfaces) {
     [0, -2.36, 0],
     [1, 1, 0.88],
   );
+  shin.name = side < 0 ? 'left-shin' : 'right-shin';
   leg.add(shin);
 
   const bootCuff = formPart(
@@ -173,6 +187,7 @@ function createLeg(side: number, surfaces: TigaSurfaces) {
   leg.add(bootCuff);
 
   const foot = formPart(new THREE.SphereGeometry(0.48, 22, 15), surfaces.red, 'form-color');
+  foot.name = side < 0 ? 'left-foot' : 'right-foot';
   foot.position.set(0, -3.24, 0.27);
   foot.scale.set(0.78, 0.54, 1.25);
   leg.add(foot);
@@ -187,48 +202,48 @@ export function createTiga(): THREE.Group {
   const surfaces: TigaSurfaces = {
     silver: new THREE.MeshPhysicalMaterial({
       color: 0xa4b0b5,
-      metalness: 0.04,
-      roughness: 0.55,
-      clearcoat: 0.1,
-      clearcoatRoughness: 0.46,
+      metalness: 0.01,
+      roughness: 0.68,
+      clearcoat: 0.06,
+      clearcoatRoughness: 0.56,
       bumpMap: fabric,
-      bumpScale: 0.025,
+      bumpScale: 0.018,
       sheen: 0.24,
       sheenColor: 0x64747c,
       sheenRoughness: 0.78,
     }),
     darkSilver: new THREE.MeshPhysicalMaterial({
       color: 0x536168,
-      metalness: 0.03,
-      roughness: 0.6,
-      clearcoat: 0.08,
-      clearcoatRoughness: 0.52,
+      metalness: 0.01,
+      roughness: 0.72,
+      clearcoat: 0.05,
+      clearcoatRoughness: 0.62,
       bumpMap: fabric,
-      bumpScale: 0.035,
+      bumpScale: 0.022,
       sheen: 0.18,
       sheenColor: 0x46545b,
       sheenRoughness: 0.82,
     }),
     red: new THREE.MeshPhysicalMaterial({
       color: FORM_STATS.multi.color,
-      metalness: 0.03,
-      roughness: 0.5,
-      clearcoat: 0.08,
-      clearcoatRoughness: 0.46,
+      metalness: 0.01,
+      roughness: 0.62,
+      clearcoat: 0.05,
+      clearcoatRoughness: 0.56,
       bumpMap: fabric,
-      bumpScale: 0.03,
+      bumpScale: 0.02,
       sheen: 0.16,
       sheenColor: 0x5b1c27,
       sheenRoughness: 0.8,
     }),
     accent: new THREE.MeshPhysicalMaterial({
       color: FORM_STATS.multi.accent,
-      metalness: 0.03,
-      roughness: 0.52,
-      clearcoat: 0.08,
-      clearcoatRoughness: 0.48,
+      metalness: 0.01,
+      roughness: 0.64,
+      clearcoat: 0.05,
+      clearcoatRoughness: 0.58,
       bumpMap: fabric,
-      bumpScale: 0.03,
+      bumpScale: 0.02,
       sheen: 0.18,
       sheenColor: 0x3e345c,
       sheenRoughness: 0.82,
@@ -253,13 +268,19 @@ export function createTiga(): THREE.Group {
     [0, 5.48, 0.58],
     [0.9, 0.7, 0.16],
   );
+  const pelvis = part(
+    new THREE.SphereGeometry(0.92, 28, 18),
+    surfaces.silver,
+    [0, 3.72, 0],
+    [0.92, 0.48, 0.7],
+  );
   const waistBand = part(
     new THREE.TorusGeometry(0.76, 0.09, 12, 32),
     surfaces.accent,
     [0, 3.9, 0],
   );
   waistBand.rotation.x = Math.PI / 2;
-  tiga.add(torso, chestPlate, waistBand, neck);
+  tiga.add(torso, chestPlate, pelvis, waistBand, neck);
 
   for (const side of [-1, 1]) {
     const chestStripe = formPart(

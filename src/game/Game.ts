@@ -656,11 +656,28 @@ export class TigaGame {
       this.tiga.rotation.z = idle;
       const rightArm = this.tiga.getObjectByName('right-arm');
       const leftArm = this.tiga.getObjectByName('left-arm');
+      const rightLeg = this.tiga.getObjectByName('right-leg');
+      const leftLeg = this.tiga.getObjectByName('left-leg');
+      const poseProgress = this.attackPoseTimer > 0
+        ? Math.sin((this.attackPoseTimer / Math.max(0.01, this.attackCooldown)) * Math.PI)
+        : 0;
+      const isKick = this.attackPose === 'kick';
+      const isPunch = this.attackPose === 'punch';
       if (rightArm && leftArm) {
-        const poseProgress = this.attackPoseTimer > 0 ? Math.sin((this.attackPoseTimer / Math.max(0.01, this.attackCooldown)) * Math.PI) : 0;
-        rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, this.attackPose === 'kick' ? 0 : -1.15 * poseProgress, delta * 18);
-        leftArm.rotation.x = THREE.MathUtils.lerp(leftArm.rotation.x, this.attackPose.includes('lightning') ? -1.1 * poseProgress : 0, delta * 18);
+        const rightArmTarget = isKick ? -0.26 * poseProgress : isPunch ? -1.3 * poseProgress : 0;
+        const leftArmTarget = isKick ? 0.45 * poseProgress : this.attackPose.includes('lightning') ? -1.1 * poseProgress : 0;
+        rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, rightArmTarget, delta * 18);
+        leftArm.rotation.x = THREE.MathUtils.lerp(leftArm.rotation.x, leftArmTarget, delta * 18);
+        rightArm.rotation.z = THREE.MathUtils.lerp(rightArm.rotation.z, isKick ? -0.18 * poseProgress : 0, delta * 18);
+        leftArm.rotation.z = THREE.MathUtils.lerp(leftArm.rotation.z, isKick ? 0.22 * poseProgress : 0, delta * 18);
       }
+      if (rightLeg && leftLeg) {
+        rightLeg.rotation.z = THREE.MathUtils.lerp(rightLeg.rotation.z, isKick ? -1.02 * poseProgress : 0, delta * 16);
+        leftLeg.rotation.z = THREE.MathUtils.lerp(leftLeg.rotation.z, isKick ? 0.18 * poseProgress : 0, delta * 16);
+        rightLeg.rotation.x = THREE.MathUtils.lerp(rightLeg.rotation.x, isKick ? -0.16 * poseProgress : 0, delta * 16);
+        leftLeg.rotation.x = THREE.MathUtils.lerp(leftLeg.rotation.x, isKick ? 0.08 * poseProgress : 0, delta * 16);
+      }
+      this.tiga.rotation.x = THREE.MathUtils.lerp(this.tiga.rotation.x, isKick ? -0.16 * poseProgress : isPunch ? 0.06 * poseProgress : 0, delta * 14);
     }
     this.monsters.forEach((monster, monsterIndex) => {
       if (!monster.defeated) {
