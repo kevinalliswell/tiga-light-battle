@@ -61,12 +61,12 @@ function createArm(side: number, surfaces: TigaSurfaces) {
   arm.position.set(side * 1.2, 5.9, 0);
   arm.rotation.z = -side * 0.1;
 
-  const shoulder = part(new THREE.SphereGeometry(0.52, 28, 20), surfaces.silver);
-  shoulder.scale.set(1.1, 0.92, 0.88);
+  const shoulder = part(new THREE.SphereGeometry(0.43, 28, 20), surfaces.silver);
+  shoulder.scale.set(1.08, 0.94, 0.9);
   arm.add(shoulder);
 
   const shoulderMark = formPart(
-    new THREE.SphereGeometry(0.47, 22, 14),
+    new THREE.SphereGeometry(0.43, 22, 14),
     surfaces.red,
     'form-color',
   );
@@ -186,72 +186,60 @@ export function createTiga(): THREE.Group {
 
   const surfaces: TigaSurfaces = {
     silver: new THREE.MeshPhysicalMaterial({
-      color: 0xb4bec3,
-      metalness: 0.12,
-      roughness: 0.43,
-      clearcoat: 0.18,
-      clearcoatRoughness: 0.34,
+      color: 0xa4b0b5,
+      metalness: 0.04,
+      roughness: 0.55,
+      clearcoat: 0.1,
+      clearcoatRoughness: 0.46,
       bumpMap: fabric,
       bumpScale: 0.025,
-      sheen: 0.18,
-      sheenColor: 0x56656e,
-      sheenRoughness: 0.7,
+      sheen: 0.24,
+      sheenColor: 0x64747c,
+      sheenRoughness: 0.78,
     }),
     darkSilver: new THREE.MeshPhysicalMaterial({
-      color: 0x4f5d64,
-      metalness: 0.1,
-      roughness: 0.52,
-      clearcoat: 0.12,
-      clearcoatRoughness: 0.42,
+      color: 0x536168,
+      metalness: 0.03,
+      roughness: 0.6,
+      clearcoat: 0.08,
+      clearcoatRoughness: 0.52,
       bumpMap: fabric,
       bumpScale: 0.035,
-      sheen: 0.12,
-      sheenColor: 0x3f4c53,
-      sheenRoughness: 0.78,
+      sheen: 0.18,
+      sheenColor: 0x46545b,
+      sheenRoughness: 0.82,
     }),
     red: new THREE.MeshPhysicalMaterial({
       color: FORM_STATS.multi.color,
-      metalness: 0.08,
-      roughness: 0.4,
-      clearcoat: 0.16,
-      clearcoatRoughness: 0.32,
+      metalness: 0.03,
+      roughness: 0.5,
+      clearcoat: 0.08,
+      clearcoatRoughness: 0.46,
       bumpMap: fabric,
       bumpScale: 0.03,
-      sheen: 0.1,
+      sheen: 0.16,
       sheenColor: 0x5b1c27,
-      sheenRoughness: 0.74,
+      sheenRoughness: 0.8,
     }),
     accent: new THREE.MeshPhysicalMaterial({
       color: FORM_STATS.multi.accent,
-      metalness: 0.06,
-      roughness: 0.42,
-      clearcoat: 0.14,
-      clearcoatRoughness: 0.36,
+      metalness: 0.03,
+      roughness: 0.52,
+      clearcoat: 0.08,
+      clearcoatRoughness: 0.48,
       bumpMap: fabric,
       bumpScale: 0.03,
-      sheen: 0.12,
+      sheen: 0.18,
       sheenColor: 0x3e345c,
-      sheenRoughness: 0.76,
+      sheenRoughness: 0.82,
     }),
   };
 
-  const pelvis = part(
-    new THREE.SphereGeometry(0.9, 26, 18),
+  const torso = part(
+    new THREE.CapsuleGeometry(0.86, 2.05, 8, 24),
     surfaces.silver,
-    [0, 3.42, 0],
-    [1.06, 0.64, 0.74],
-  );
-  const abdomen = part(
-    new THREE.CylinderGeometry(0.92, 0.7, 1.55, 26, 5),
-    surfaces.silver,
-    [0, 4.25, 0],
-    [1, 1, 0.72],
-  );
-  const chest = part(
-    new THREE.SphereGeometry(1.2, 30, 22),
-    surfaces.silver,
-    [0, 5.45, 0],
-    [1.16, 1.0, 0.72],
+    [0, 4.72, 0],
+    [1.1, 1, 0.72],
   );
   const neck = part(
     new THREE.CylinderGeometry(0.42, 0.5, 0.55, 22),
@@ -263,7 +251,7 @@ export function createTiga(): THREE.Group {
     new THREE.SphereGeometry(1.13, 32, 22),
     surfaces.darkSilver,
     [0, 5.48, 0.58],
-    [0.94, 0.78, 0.23],
+    [0.9, 0.7, 0.16],
   );
   const waistBand = part(
     new THREE.TorusGeometry(0.76, 0.09, 12, 32),
@@ -271,7 +259,7 @@ export function createTiga(): THREE.Group {
     [0, 3.9, 0],
   );
   waistBand.rotation.x = Math.PI / 2;
-  tiga.add(pelvis, abdomen, chest, chestPlate, waistBand, neck);
+  tiga.add(torso, chestPlate, waistBand, neck);
 
   for (const side of [-1, 1]) {
     const chestStripe = formPart(
@@ -304,10 +292,10 @@ export function createTiga(): THREE.Group {
   tiga.add(collar);
 
   const head = part(
-    new THREE.SphereGeometry(0.78, 32, 24),
+    new THREE.CapsuleGeometry(0.63, 0.46, 7, 22),
     surfaces.silver,
     [0, 7.42, 0],
-    [0.82, 1.08, 0.82],
+    [0.9, 1.08, 0.9],
   );
   const jaw = part(
     new THREE.SphereGeometry(0.58, 26, 18),
