@@ -25,6 +25,7 @@ import { getTutorialInstruction, type TutorialStage } from '../game/tutorial';
 
 export type GameAction =
   | Ability
+  | 'demogea-finish'
   | 'move-left'
   | 'move-right'
   | 'jump'
@@ -44,6 +45,7 @@ export interface HudSnapshot {
   monsterHealth: number;
   monsterMaxHealth: number;
   monsterCount: number;
+  demogeaBattle: boolean;
   wave: number;
   message: string;
   defeatReason: DefeatReason | null;
@@ -53,7 +55,9 @@ export interface HudSnapshot {
   tutorialStage: TutorialStage;
 }
 
-const ABILITY_KEYS: Array<{ key: string; action: Ability; label: string; icon: string }> = [
+type CombatAction = Ability | 'demogea-finish';
+
+const ABILITY_KEYS: Array<{ key: string; action: CombatAction; label: string; icon: string }> = [
   { key: 'Q', action: 'punch', label: '光拳', icon: 'biceps-flexed' },
   { key: 'W', action: 'kick', label: '飞踢', icon: 'activity' },
   { key: 'E', action: 'boomerang', label: '迪迦飞镖', icon: 'sparkles' },
@@ -62,6 +66,7 @@ const ABILITY_KEYS: Array<{ key: string; action: Ability; label: string; icon: s
   { key: 'C', action: 'runboldt', label: '兰帕尔特', icon: 'gauge' },
   { key: '5', action: 'evolution-ray', label: '光之进化', icon: 'sparkles' },
   { key: 'D', action: 'super-lightning', label: '时空闪电', icon: 'bolt' },
+  { key: '6', action: 'demogea-finish', label: '体内爆破', icon: 'bolt' },
 ];
 
 export class Hud {
@@ -275,12 +280,15 @@ export class Hud {
     });
 
     this.host.querySelectorAll<HTMLButtonElement>('.action-button').forEach((button) => {
-      const ability = button.dataset.action as Ability;
+      const action = button.dataset.action as GameAction;
+      const isDemogeaFinisher = action === 'demogea-finish';
       button.disabled =
         !snapshot.started ||
-        !canUseAbility(snapshot.form, ability) ||
         snapshot.defeatReason !== null ||
-        snapshot.recharging;
+        snapshot.recharging ||
+        (isDemogeaFinisher
+          ? !snapshot.demogeaBattle || snapshot.playerEnergy <= 1
+          : !canUseAbility(snapshot.form, action as Ability));
     });
     const restartButton = this.host.querySelector<HTMLButtonElement>('[data-command="restart"]');
     if (restartButton) restartButton.hidden = !snapshot.started;

@@ -6,6 +6,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import type { GameAction, Hud, HudSnapshot } from '../ui/hud';
 import { Effects } from './effects';
 import {
+  DEMOGEA_PROFILE,
   GATANOTHOR_PROFILE,
   MONSTER_PROFILES,
   applyTigaForm,
@@ -21,8 +22,10 @@ import {
   canUseAbility,
   getEnergyPhase,
   resolveDamage,
+  resolveDemogeaFinisher,
   resolveRevival,
   type Ability,
+  type DamageTarget,
   type DefeatReason,
   type EnergyPhase,
   type RevivalMethod,
@@ -45,7 +48,9 @@ interface MonsterState {
   defeated: boolean;
 }
 
-const FINAL_WAVE = 5;
+const GATANOTHOR_WAVE = 5;
+const DEMOGEA_WAVE = 6;
+const FINAL_WAVE = DEMOGEA_WAVE;
 const ENERGY_COST: Record<Ability, number> = {
   punch: 0,
   kick: 1,
@@ -74,6 +79,7 @@ const KEY_ACTIONS: Record<string, GameAction> = {
   '3': 'form-sky',
   '4': 'form-shining',
   '5': 'evolution-ray',
+  '6': 'demogea-finish',
   o: 'revive',
 };
 
@@ -112,7 +118,7 @@ export class TigaGame {
   private reviveTimer = 0;
   private attackCooldown = 0;
   private attackPoseTimer = 0;
-  private attackPose: Ability = 'punch';
+  private attackPose: Ability | 'demogea-finish' = 'punch';
   private jumpVelocity = 0;
   private spawnTimer = 0;
   private victory = false;
@@ -287,6 +293,10 @@ export class TigaGame {
       this.changeForm(action.replace('form-', '') as TigaForm);
       return;
     }
+    if (action === 'demogea-finish') {
+      this.demogeaFinisher();
+      return;
+    }
     this.attack(action as Ability);
   }
 
@@ -344,11 +354,21 @@ export class TigaGame {
     targets.forEach((target) => {
       const end = target.object.position.clone().add(new THREE.Vector3(0, 4.8, 0));
       this.playAbilityEffect(ability, start, end);
-      const targetKind = target.profile.id === 'gatanothor' ? 'gatanothor' : 'ordinary';
+      const targetKind: DamageTarget =
+        target.profile.id === 'gatanothor'
+          ? 'gatanothor'
+          : target.profile.id === 'demogea'
+            ? 'demogea'
+            : 'ordinary';
       const damage = resolveDamage(this.form, ability, targetKind);
       if (damage === 0) {
         this.effects.shield(end);
-        this.setMessage('攻击无效！加坦杰厄的防御无法被打破', 1.8);
+        this.setMessage(
+          target.profile.id === 'demogea'
+            ? '迪莫杰厄的身体挡住了常规攻击，按 6 穿梭爆破'
+            : '攻击无效！加坦杰厄的防御无法被打破',
+          1.8,
+        );
         this.tone(80, 0.22, 'square');
         return;
       }
@@ -363,6 +383,35 @@ export class TigaGame {
       this.tone(ability === 'super-lightning' ? 760 : 150 + damage * 5, 0.12, 'sawtooth');
       if (target.health <= 0) this.defeatMonster(target);
     });
+    this.updateHud();
+  }
+
+  private demogeaFinisher() {
+    if (this.defeatReason || this.victory || this.attackCooldown > 0) return;
+    const target = this.nearestMonster();
+    if (!target || target.profile.id !== 'demogea') {
+      this.setMessage('迪莫杰厄还没有出现，6键暂时无法使用', 1.5);
+      return;
+    }
+    const resolution = resolveDemogeaFinisher('demogea', this.energy);
+    if (!resolution.canUse) {
+      this.setMessage('体内爆破至少需要 2 点能量', 1.4);
+      return;
+    }
+
+    this.energy = resolution.remainingEnergy;
+    this.energyPhase = getEnergyPhase(this.energy);
+    this.energyAlert = '体内爆破消耗了能量，迪迦仍然安全';
+    this.attackCooldown = 1.2;
+    this.attackPoseTimer = this.attackCooldown;
+    this.attackPose = 'demogea-finish';
+    const start = this.tiga.position.clone().add(new THREE.Vector3(1.25, 5.1, 0));
+    const end = target.object.position.clone().add(new THREE.Vector3(0, 4.8, 0));
+    this.effects.demogeaBurst(start, end);
+    target.health = 0;
+    target.knockback = 5;
+    this.tone(920, 0.22, 'sawtooth');
+    this.defeatMonster(target);
     this.updateHud();
   }
 
@@ -398,10 +447,17 @@ export class TigaGame {
     monster.stunned = 99;
     this.effects.impact(monster.object.position.clone().add(new THREE.Vector3(0, 4, 0)), 0xff784c, 3.5);
     if (monster.profile.id === 'gatanothor') {
-      this.victory = true;
-      this.setMessage('超级时空闪电击破黑暗，迪迦胜利！', 999);
+      this.spawnTimer = 2.8;
+      this.setMessage('加坦杰厄倒下，黑暗后方的迪莫杰厄苏醒！', 3.2);
       this.tone(520, 0.3, 'triangle');
-      this.tone(780, 0.42, 'sine', 0.22);
+      this.tone(380, 0.42, 'sine', 0.22);
+      return;
+    }
+    if (monster.profile.id === 'demogea') {
+      this.victory = true;
+      this.setMessage('迪迦穿过迪莫杰厄的身体，体内爆破成功！', 999);
+      this.tone(780, 0.42, 'sine');
+      this.tone(1040, 0.52, 'triangle', 0.18);
       return;
     }
     this.lightMeter = Math.min(100, this.lightMeter + 25);
@@ -413,11 +469,15 @@ export class TigaGame {
 
   private spawnWave() {
     this.monsters.splice(0).forEach((monster) => this.scene.remove(monster.object));
-    const isFinal = this.wave === FINAL_WAVE;
-    const profile = isFinal
+    const isGatanothor = this.wave === GATANOTHOR_WAVE;
+    const isDemogea = this.wave === DEMOGEA_WAVE;
+    const isBossWave = isGatanothor || isDemogea;
+    const profile = isGatanothor
       ? GATANOTHOR_PROFILE
-      : MONSTER_PROFILES[Math.floor(Math.random() * MONSTER_PROFILES.length)];
-    const count = isFinal ? 1 : this.wave === 3 ? 2 : this.wave === 4 && Math.random() > 0.45 ? 3 : 1;
+      : isDemogea
+        ? DEMOGEA_PROFILE
+        : MONSTER_PROFILES[Math.floor(Math.random() * MONSTER_PROFILES.length)];
+    const count = isBossWave ? 1 : this.wave === 3 ? 2 : this.wave === 4 && Math.random() > 0.45 ? 3 : 1;
     for (let index = 0; index < count; index += 1) {
       const object = createMonster(profile);
       object.position.set(9 + index * 2.2, 0, (index - (count - 1) / 2) * 2.1);
@@ -433,11 +493,16 @@ export class TigaGame {
         defeated: false,
       });
     }
-    if (isFinal) {
+    if (isGatanothor) {
       this.lightMeter = 100;
       this.scene.background = new THREE.Color(0x050608);
       this.scene.fog = new THREE.FogExp2(0x080a0d, 0.026);
       this.setMessage('最终决战：哉佩利敖光线和闪耀型超级时空闪电能够击穿防御', 4.5);
+    } else if (isDemogea) {
+      this.lightMeter = 100;
+      this.scene.background = new THREE.Color(0x160810);
+      this.scene.fog = new THREE.FogExp2(0x1d0a16, 0.024);
+      this.setMessage('第二场最终决战：按 6 穿梭迪莫杰厄体内并引爆', 4.5);
     } else if (count > 1) {
       this.setMessage(`${profile.name}发生克隆：${count}只怪兽同时出现`, 2.6);
     } else {
@@ -607,6 +672,10 @@ export class TigaGame {
     return this.livingMonsters().some((monster) => monster.profile.id === 'gatanothor');
   }
 
+  private isDemogeaBattle() {
+    return this.livingMonsters().some((monster) => monster.profile.id === 'demogea');
+  }
+
   private turnToStone(reason: DefeatReason) {
     if (this.defeatReason) return;
     this.defeatReason = reason;
@@ -745,6 +814,7 @@ export class TigaGame {
       monsterHealth,
       monsterMaxHealth,
       monsterCount: living.length,
+      demogeaBattle: this.isDemogeaBattle(),
       wave: this.wave,
       message: this.messageTimer > 0 ? this.message : '',
       defeatReason: this.defeatReason,

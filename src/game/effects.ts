@@ -132,6 +132,63 @@ export class Effects {
     this.impact(end, 0xffd85e, 3.8);
   }
 
+  demogeaBurst(start: THREE.Vector3, end: THREE.Vector3) {
+    const group = new THREE.Group();
+    const tunnel = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.24, 0.58, start.distanceTo(end), 12),
+      new THREE.MeshBasicMaterial({
+        color: 0xffe58c,
+        transparent: true,
+        opacity: 0.58,
+        depthWrite: false,
+      }),
+    );
+    alignCylinder(tunnel, start, end);
+    group.add(tunnel);
+
+    const core = new THREE.Mesh(
+      new THREE.SphereGeometry(0.38, 14, 10),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.98 }),
+    );
+    core.position.copy(start);
+    group.add(core);
+
+    const rings: THREE.Mesh[] = [];
+    for (let index = 0; index < 3; index += 1) {
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(0.62 + index * 0.24, 0.08, 8, 24),
+        new THREE.MeshBasicMaterial({
+          color: index % 2 === 0 ? 0xffef9f : 0xff8d63,
+          transparent: true,
+          opacity: 0.9,
+        }),
+      );
+      ring.position.copy(end);
+      ring.rotation.x = Math.PI / 2;
+      group.add(ring);
+      rings.push(ring);
+    }
+
+    this.scene.add(group);
+    this.effects.push({
+      object: group,
+      age: 0,
+      duration: 1.15,
+      update: (progress) => {
+        core.position.lerpVectors(start, end, Math.min(1, progress * 1.25));
+        core.scale.setScalar(1 + progress * 1.1);
+        tunnel.scale.set(1 + progress * 0.28, 1, 1 + progress * 0.28);
+        rings.forEach((ring, index) => {
+          ring.scale.setScalar(0.35 + progress * (1.8 + index * 0.28));
+          (ring.material as THREE.MeshBasicMaterial).opacity = 0.9 * (1 - progress);
+        });
+        (tunnel.material as THREE.MeshBasicMaterial).opacity = 0.58 * (1 - progress);
+        (core.material as THREE.MeshBasicMaterial).opacity = 1 - progress * 0.55;
+      },
+    });
+    this.impact(end, 0xff895e, 5.8);
+  }
+
   shield(position: THREE.Vector3) {
     const shield = new THREE.Mesh(
       new THREE.SphereGeometry(3.2, 18, 12),
