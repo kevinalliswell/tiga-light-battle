@@ -5,6 +5,7 @@ import {
   canUseAbility,
   canUseFlashlight,
   getEnergyPhase,
+  hasInfiniteEnergy,
   resolveDamage,
   resolveDemogeaFinisher,
   resolveRevival,
@@ -57,6 +58,11 @@ describe('form abilities', () => {
   it('requires a full light meter before shining transformation', () => {
     expect(canTransform('shining', 99)).toBe(false);
     expect(canTransform('shining', 100)).toBe(true);
+  });
+
+  it('gives shining form an energy reserve that never drains', () => {
+    expect(hasInfiniteEnergy('shining')).toBe(true);
+    expect(hasInfiniteEnergy('multi')).toBe(false);
   });
 });
 
@@ -137,11 +143,11 @@ describe('Gatanothor final battle', () => {
 });
 
 describe('Demogea body-burst finisher', () => {
-  it('lets key 6 detonate Demogea and leaves Tiga at one energy', () => {
+  it('lets key 6 detonate Demogea while keeping shining energy full', () => {
     expect(resolveDemogeaFinisher('shining', 'demogea', 72)).toEqual({
       canUse: true,
       damage: 9999,
-      remainingEnergy: 1,
+      remainingEnergy: 100,
     });
   });
 

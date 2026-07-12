@@ -24,6 +24,7 @@ import {
   canTransform,
   canUseAbility,
   getEnergyPhase,
+  hasInfiniteEnergy,
   resolveDamage,
   resolveDemogeaFinisher,
   resolveRevival,
@@ -328,6 +329,9 @@ export class TigaGame {
     }
     if (nextForm === 'shining') {
       this.lightMeter = 0;
+      this.energy = 100;
+      this.energyPhase = 'stable';
+      this.energyAlert = '闪耀型能量已充满，不会消耗';
       this.effects.impact(this.tiga.position.clone().add(new THREE.Vector3(0, 4.6, 0)), 0xffd866, 4.2);
       this.audio?.play('transform');
       this.tone(640, 0.36, 'sine');
@@ -351,7 +355,7 @@ export class TigaGame {
       this.tone(105, 0.1, 'square');
       return;
     }
-    const cost = ENERGY_COST[ability];
+    const cost = hasInfiniteEnergy(this.form) ? 0 : ENERGY_COST[ability];
     if (this.energy <= cost) {
       this.setMessage('能量不足', 1.2);
       return;
@@ -428,7 +432,7 @@ export class TigaGame {
 
     this.energy = resolution.remainingEnergy;
     this.energyPhase = getEnergyPhase(this.energy);
-    this.energyAlert = '体内爆破消耗了能量，迪迦仍然安全';
+    this.energyAlert = '闪耀型能量保持充满，体内爆破完成';
     this.attackCooldown = 1.2;
     this.attackPoseTimer = this.attackCooldown;
     this.attackPose = 'demogea-finish';
@@ -564,7 +568,12 @@ export class TigaGame {
     this.updatePlayer(delta);
     if (this.tutorialStage !== 'done') return;
     this.updateMonsters(delta);
-    this.energy = Math.max(0, this.energy - delta * (this.form === 'shining' ? 0.9 : 0.24));
+    if (hasInfiniteEnergy(this.form)) {
+      this.energy = 100;
+      this.energyPhase = 'stable';
+    } else {
+      this.energy = Math.max(0, this.energy - delta * 0.24);
+    }
     this.updateEnergyPhase();
     if (this.health <= 0) this.turnToStone('defeated');
     else if (this.energy <= 0 && !this.isGatanothorBattle()) this.turnToStone('exhausted');

@@ -96,6 +96,10 @@ export function canTransform(form: TigaForm, lightMeter: number): boolean {
   return form !== 'shining' || lightMeter >= 100;
 }
 
+export function hasInfiniteEnergy(form: TigaForm): boolean {
+  return form === 'shining';
+}
+
 export function getEnergyPhase(energy: number): EnergyPhase {
   if (energy <= 25) return 'critical';
   if (energy <= 50) return 'warning';
@@ -132,7 +136,7 @@ export function resolveDemogeaFinisher(
   return {
     canUse,
     damage: canUse ? 9999 : 0,
-    remainingEnergy: canUse ? 1 : energy,
+    remainingEnergy: canUse ? (hasInfiniteEnergy(form) ? 100 : 1) : energy,
   };
 }
 
