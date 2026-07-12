@@ -6,6 +6,7 @@ import {
   canUseFlashlight,
   getEnergyPhase,
   resolveDamage,
+  resolveDemogeaFinisher,
   resolveRevival,
 } from './rules';
 
@@ -132,5 +133,25 @@ describe('Gatanothor final battle', () => {
 
   it('makes the shining evolution ray a one-hit finisher for ordinary monsters', () => {
     expect(resolveDamage('shining', 'evolution-ray', 'ordinary')).toBeGreaterThanOrEqual(999);
+  });
+});
+
+describe('Demogea body-burst finisher', () => {
+  it('lets key 6 detonate Demogea and leaves Tiga at one energy', () => {
+    expect(resolveDemogeaFinisher('demogea', 72)).toEqual({
+      canUse: true,
+      damage: 9999,
+      remainingEnergy: 1,
+    });
+  });
+
+  it('does not allow the body-burst finisher against another target or at one energy', () => {
+    expect(resolveDemogeaFinisher('gatanothor', 72).canUse).toBe(false);
+    expect(resolveDemogeaFinisher('demogea', 1).canUse).toBe(false);
+  });
+
+  it('keeps Demogea protected from regular light attacks', () => {
+    expect(resolveDamage('shining', 'super-lightning', 'demogea')).toBe(0);
+    expect(resolveDamage('multi', 'zeperion', 'demogea')).toBe(0);
   });
 });

@@ -5,7 +5,7 @@ import { FORM_STATS, type TigaForm } from './rules';
 export { createTiga } from './tigaModel';
 
 export interface MonsterProfile {
-  id: 'golza' | 'melba' | 'kyrieloid' | 'gatanothor';
+  id: 'golza' | 'melba' | 'kyrieloid' | 'gatanothor' | 'demogea';
   name: string;
   maxHealth: number;
   speed: number;
@@ -57,6 +57,17 @@ export const GATANOTHOR_PROFILE: MonsterProfile = {
   attackRange: 6,
   color: 0x17191c,
   accent: 0x59616a,
+};
+
+export const DEMOGEA_PROFILE: MonsterProfile = {
+  id: 'demogea',
+  name: '迪莫杰厄',
+  maxHealth: 420,
+  speed: 0.58,
+  power: 30,
+  attackRange: 7,
+  color: 0x241625,
+  accent: 0xb54e7c,
 };
 
 function material(color: number, metalness = 0.1, roughness = 0.7) {

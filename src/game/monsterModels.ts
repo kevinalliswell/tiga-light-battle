@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 export interface MonsterVisualProfile {
-  id: 'golza' | 'melba' | 'kyrieloid' | 'gatanothor';
+  id: 'golza' | 'melba' | 'kyrieloid' | 'gatanothor' | 'demogea';
   name: string;
   color: number;
   accent: number;
@@ -474,15 +474,32 @@ function createGatanothor(profile: MonsterVisualProfile) {
   return monster;
 }
 
+function createDemogea(profile: MonsterVisualProfile) {
+  const monster = createGatanothor(profile);
+  monster.scale.multiplyScalar(1.34);
+  monster.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    const material = object.material as THREE.MeshStandardMaterial;
+    if (material.color) material.color.offsetHSL(0.04, 0.12, -0.08);
+    if (material.emissive) {
+      material.emissive.setHex(0x5a113e);
+      material.emissiveIntensity = 2.2;
+    }
+  });
+  return monster;
+}
+
 export function createMonsterVisual(profile: MonsterVisualProfile) {
   const monster =
     profile.id === 'golza'
       ? createGolza(profile)
       : profile.id === 'melba'
-        ? createMelba(profile)
-        : profile.id === 'kyrieloid'
-          ? createKyrieloid(profile)
-          : createGatanothor(profile);
+          ? createMelba(profile)
+          : profile.id === 'kyrieloid'
+            ? createKyrieloid(profile)
+            : profile.id === 'gatanothor'
+              ? createGatanothor(profile)
+              : createDemogea(profile);
   monster.name = profile.name;
   monster.traverse((object) => {
     if (object instanceof THREE.Mesh) object.frustumCulled = false;

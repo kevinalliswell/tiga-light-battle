@@ -12,6 +12,7 @@ export type DefeatReason = 'exhausted' | 'defeated';
 export type RevivalMethod = 'flashlight' | 'belief';
 export type EnergyPhase = 'stable' | 'warning' | 'critical';
 export type RevivalTarget = 'ordinary' | 'gatanothor';
+export type DamageTarget = 'ordinary' | 'gatanothor' | 'demogea';
 
 export interface FormStats {
   label: string;
@@ -108,9 +109,10 @@ export function canUseFlashlight(target: RevivalTarget): boolean {
 export function resolveDamage(
   form: TigaForm,
   ability: Ability,
-  target: 'ordinary' | 'gatanothor',
+  target: DamageTarget,
 ): number {
   if (!canUseAbility(form, ability)) return 0;
+  if (target === 'demogea') return 0;
   if (target === 'gatanothor') {
     if (ability === 'zeperion') {
       return Math.round(BASE_DAMAGE[ability] * FORM_STATS[form].strength);
@@ -119,6 +121,18 @@ export function resolveDamage(
   }
   if (FINISHER_ABILITIES.includes(ability)) return 999;
   return Math.round(BASE_DAMAGE[ability] * FORM_STATS[form].strength);
+}
+
+export function resolveDemogeaFinisher(
+  target: DamageTarget,
+  energy: number,
+): { canUse: boolean; damage: number; remainingEnergy: number } {
+  const canUse = target === 'demogea' && energy > 1;
+  return {
+    canUse,
+    damage: canUse ? 9999 : 0,
+    remainingEnergy: canUse ? 1 : energy,
+  };
 }
 
 export function resolveRevival(method: RevivalMethod | DefeatReason): {
