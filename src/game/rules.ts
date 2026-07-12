@@ -79,6 +79,14 @@ const BASE_DAMAGE: Record<Ability, number> = {
   'super-lightning': 80,
 };
 
+const FINISHER_ABILITIES: Ability[] = [
+  'delacium',
+  'zeperion',
+  'runboldt',
+  'evolution-ray',
+  'super-lightning',
+];
+
 export function canUseAbility(form: TigaForm, ability: Ability): boolean {
   return FORM_ABILITIES[form].includes(ability);
 }
@@ -109,6 +117,7 @@ export function resolveDamage(
     }
     return form === 'shining' && ability === 'super-lightning' ? BASE_DAMAGE[ability] : 0;
   }
+  if (FINISHER_ABILITIES.includes(ability)) return 999;
   return Math.round(BASE_DAMAGE[ability] * FORM_STATS[form].strength);
 }
 

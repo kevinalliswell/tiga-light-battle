@@ -117,9 +117,13 @@ describe('Gatanothor final battle', () => {
     expect(resolveDamage('power', 'delacium', 'ordinary')).toBeGreaterThan(0);
   });
 
-  it('makes the shining evolution ray stronger than the ordinary Zeperion beam', () => {
-    expect(resolveDamage('shining', 'evolution-ray', 'ordinary')).toBeGreaterThan(
-      resolveDamage('multi', 'zeperion', 'ordinary'),
-    );
+  it('lets a form-appropriate finisher defeat any ordinary monster in one hit', () => {
+    expect(resolveDamage('power', 'delacium', 'ordinary')).toBeGreaterThanOrEqual(999);
+    expect(resolveDamage('multi', 'zeperion', 'ordinary')).toBeGreaterThanOrEqual(999);
+    expect(resolveDamage('sky', 'runboldt', 'ordinary')).toBeGreaterThanOrEqual(999);
+  });
+
+  it('makes the shining evolution ray a one-hit finisher for ordinary monsters', () => {
+    expect(resolveDamage('shining', 'evolution-ray', 'ordinary')).toBeGreaterThanOrEqual(999);
   });
 });

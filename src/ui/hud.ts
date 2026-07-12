@@ -21,6 +21,7 @@ import {
   type RevivalMethod,
   type TigaForm,
 } from '../game/rules';
+import { getTutorialInstruction, type TutorialStage } from '../game/tutorial';
 
 export type GameAction =
   | Ability
@@ -49,6 +50,7 @@ export interface HudSnapshot {
   revivalMethod: RevivalMethod | null;
   reviving: boolean;
   recharging: boolean;
+  tutorialStage: TutorialStage;
 }
 
 const ABILITY_KEYS: Array<{ key: string; action: Ability; label: string; icon: string }> = [
@@ -98,6 +100,16 @@ export class Hud {
         </header>
 
         <div class="announcement" role="status" aria-live="polite" data-hud="message"></div>
+
+        <section class="tutorial-panel" data-hud="tutorial" aria-live="polite" hidden>
+          <div class="tutorial-label" data-hud="tutorial-label">教学 1 / 4</div>
+          <h2 data-hud="tutorial-title">先让迪迦移动起来</h2>
+          <p data-hud="tutorial-copy">按住左箭头或右箭头，走近前面的怪兽。</p>
+          <div class="tutorial-footer">
+            <kbd data-hud="tutorial-key">←  →</kbd>
+            <button class="tutorial-skip" type="button" data-command="tutorial-skip">跳过教学</button>
+          </div>
+        </section>
 
         <div class="energy-alert" data-hud="energy-alert" role="status" aria-live="polite" hidden>
           <button class="energy-help-command" type="button" data-action="revive">
@@ -189,6 +201,10 @@ export class Hud {
     this.startHandler = handler;
   }
 
+  onTutorialSkip(handler: () => void) {
+    this.host.querySelector<HTMLButtonElement>('[data-command="tutorial-skip"]')?.addEventListener('click', handler);
+  }
+
   render(snapshot: HudSnapshot) {
     this.setWidth('player-health', snapshot.playerHealth);
     this.setWidth('player-energy', snapshot.playerEnergy);
@@ -212,6 +228,15 @@ export class Hud {
     );
 
     this.query<HTMLElement>('start-screen').hidden = snapshot.started;
+    const tutorial = this.query<HTMLElement>('tutorial');
+    tutorial.hidden = !snapshot.started || snapshot.tutorialStage === 'done';
+    if (snapshot.tutorialStage !== 'done') {
+      const instruction = getTutorialInstruction(snapshot.tutorialStage);
+      this.setText('tutorial-label', instruction.label);
+      this.setText('tutorial-title', instruction.title);
+      this.setText('tutorial-copy', instruction.copy);
+      this.setText('tutorial-key', instruction.key);
+    }
     const energyAlert = this.query<HTMLElement>('energy-alert');
     energyAlert.hidden =
       !snapshot.started || snapshot.defeatReason !== null || snapshot.energyPhase !== 'critical';
@@ -223,7 +248,14 @@ export class Hud {
     const reviveScreen = this.query<HTMLElement>('revive-screen');
     reviveScreen.hidden = snapshot.defeatReason === null;
     if (snapshot.defeatReason) {
-      this.setText('revive-kicker', snapshot.revivalMethod === 'belief' ? '孩子们的信念之光' : '能量耗尽');
+      this.setText(
+        'revive-kicker',
+        snapshot.revivalMethod === 'belief'
+          ? '孩子们的信念之光'
+          : snapshot.defeatReason === 'exhausted'
+            ? '能量耗尽'
+            : '生命归零',
+      );
       this.setText(
         'revive-title',
         snapshot.revivalMethod === 'belief' ? '让孩子们的光唤醒迪迦' : '迪迦变成了石像',

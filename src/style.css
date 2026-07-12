@@ -189,6 +189,58 @@ button:focus-visible {
   font-weight: 750;
 }
 
+.tutorial-panel {
+  position: absolute;
+  top: 9.35rem;
+  left: 50%;
+  width: min(32rem, calc(100vw - 2rem));
+  padding: 0.85rem 1rem 0.9rem;
+  transform: translateX(-50%);
+  color: #eef6f7;
+  background: rgba(6, 12, 17, 0.88);
+  border: 1px solid rgba(121, 216, 231, 0.48);
+  border-left: 3px solid var(--cyan);
+  box-shadow: 0 0.35rem 1.2rem rgba(0, 0, 0, 0.24);
+  pointer-events: auto;
+}
+
+.tutorial-panel[hidden] {
+  display: none;
+}
+
+.tutorial-label {
+  color: var(--cyan);
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.tutorial-panel h2 {
+  margin: 0.18rem 0 0;
+  font-size: 1.1rem;
+}
+
+.tutorial-panel p {
+  margin: 0.35rem 0 0.65rem;
+  color: #c4d0d3;
+  font-size: 0.78rem;
+}
+
+.tutorial-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.tutorial-skip {
+  padding: 0.28rem 0.5rem;
+  color: #c4d0d3;
+  background: transparent;
+  border: 1px solid rgba(225, 235, 241, 0.3);
+  border-radius: 3px;
+  font-size: 0.68rem;
+}
+
 .energy-alert {
   position: absolute;
   top: 10.05rem;
@@ -505,6 +557,20 @@ kbd {
   .announcement {
     top: 7.7rem;
     font-size: 0.68rem;
+  }
+
+  .tutorial-panel {
+    top: 9.1rem;
+    width: calc(100vw - 1rem);
+    padding: 0.65rem 0.75rem 0.7rem;
+  }
+
+  .tutorial-panel h2 {
+    font-size: 0.94rem;
+  }
+
+  .tutorial-panel p {
+    font-size: 0.66rem;
   }
 
   .energy-alert {

@@ -28,6 +28,12 @@ import {
   type RevivalMethod,
   type TigaForm,
 } from './rules';
+import {
+  advanceTutorial,
+  getTutorialInstruction,
+  type TutorialAction,
+  type TutorialStage,
+} from './tutorial';
 
 interface MonsterState {
   profile: MonsterProfile;
@@ -102,6 +108,7 @@ export class TigaGame {
   private revivalMethod: RevivalMethod | null = null;
   private reviving = false;
   private recharging = false;
+  private tutorialStage: TutorialStage = 'move';
   private reviveTimer = 0;
   private attackCooldown = 0;
   private attackPoseTimer = 0;
@@ -141,6 +148,7 @@ export class TigaGame {
     this.spawnWave();
     this.bindInput();
     this.hud.onStart(() => this.start());
+    this.hud.onTutorialSkip(() => this.skipTutorial());
     this.hud.onAction((action, pressed) => this.handleAction(action, pressed));
     window.addEventListener('resize', () => this.resize());
     this.resize();
@@ -230,9 +238,10 @@ export class TigaGame {
   private start() {
     if (this.started) return;
     this.started = true;
+    this.tutorialStage = 'move';
     this.audio = new AudioContext();
     this.audio.resume().catch(() => undefined);
-    this.setMessage(`第 ${this.wave} 波：${this.currentMonsterName()}`, 2.4);
+    this.setMessage('教学开始：先按住 ← 或 → 让迪迦移动', 3.2);
     this.tone(220, 0.12, 'sawtooth');
     this.tone(440, 0.18, 'triangle', 0.1);
     this.updateHud();
@@ -259,6 +268,9 @@ export class TigaGame {
     if (action === 'move-left' || action === 'move-right' || action === 'guard') {
       if (pressed) this.heldActions.add(action);
       else this.heldActions.delete(action);
+      if (pressed && (action === 'move-left' || action === 'move-right')) {
+        this.completeTutorialAction('move');
+      }
       return;
     }
     if (!pressed || !this.started) return;
@@ -292,6 +304,7 @@ export class TigaGame {
     }
     this.setForm(nextForm);
     this.setMessage(`切换为${FORM_STATS[nextForm].label}`, 1.2);
+    if (nextForm === 'power') this.completeTutorialAction('form');
   }
 
   private setForm(nextForm: TigaForm) {
@@ -345,6 +358,8 @@ export class TigaGame {
       if (target.profile.id !== 'gatanothor') {
         this.lightMeter = Math.min(100, this.lightMeter + damage * 0.11);
       }
+      if (ability === 'punch' || ability === 'kick') this.completeTutorialAction('attack');
+      if (ability === 'delacium') this.completeTutorialAction('light');
       this.tone(ability === 'super-lightning' ? 760 : 150 + damage * 5, 0.12, 'sawtooth');
       if (target.health <= 0) this.defeatMonster(target);
     });
@@ -453,6 +468,7 @@ export class TigaGame {
     }
 
     this.updatePlayer(delta);
+    if (this.tutorialStage !== 'done') return;
     this.updateMonsters(delta);
     this.energy = Math.max(0, this.energy - delta * (this.form === 'shining' ? 0.9 : 0.24));
     this.updateEnergyPhase();
@@ -547,6 +563,24 @@ export class TigaGame {
       timerMaterial.emissive.setHex(lowEnergy ? 0xe11812 : 0x2bbfd6);
       timerMaterial.emissiveIntensity = lowEnergy ? 2 + Math.sin(time * 12) * 1.6 : 4;
     }
+  }
+
+  private completeTutorialAction(action: TutorialAction) {
+    if (!this.started || this.tutorialStage === 'done') return;
+    const nextStage = advanceTutorial(this.tutorialStage, action);
+    if (nextStage === this.tutorialStage) return;
+    this.tutorialStage = nextStage;
+    if (nextStage === 'done') {
+      this.setMessage(`教学完成，第 ${this.wave} 波：${this.currentMonsterName()}出现`, 2.8);
+    } else {
+      this.setMessage(getTutorialInstruction(nextStage).title, 1.8);
+    }
+  }
+
+  private skipTutorial() {
+    if (!this.started || this.tutorialStage === 'done') return;
+    this.tutorialStage = 'done';
+    this.setMessage(`教学已跳过，第 ${this.wave} 波：${this.currentMonsterName()}出现`, 2.4);
   }
 
   private updateEnergyPhase() {
@@ -717,6 +751,7 @@ export class TigaGame {
       revivalMethod: this.revivalMethod,
       reviving: this.reviving,
       recharging: this.recharging,
+      tutorialStage: this.tutorialStage,
     };
     this.hud.render(snapshot);
   }
