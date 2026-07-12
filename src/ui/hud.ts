@@ -30,6 +30,7 @@ export type GameAction =
   | 'move-right'
   | 'jump'
   | 'land'
+  | 'space-flight'
   | 'guard'
   | 'revive'
   | `form-${TigaForm}`;

@@ -77,6 +77,7 @@ const KEY_ACTIONS: Record<string, GameAction> = {
   arrowright: 'move-right',
   arrowup: 'jump',
   arrowdown: 'guard',
+  b: 'space-flight',
   q: 'punch',
   w: 'kick',
   e: 'boomerang',
@@ -136,6 +137,7 @@ export class TigaGame {
   private flightTapCount = 0;
   private flightTapWindow = 0;
   private flying = false;
+  private spaceFlying = false;
   private shiningUnlocked = false;
   private spawnTimer = 0;
   private victory = false;
@@ -326,6 +328,10 @@ export class TigaGame {
       return;
     }
     if (!pressed || !this.started) return;
+    if (action === 'space-flight') {
+      this.enterSpaceFlightMode();
+      return;
+    }
     if (action === 'land') {
       this.landFromFlight();
       return;
@@ -630,7 +636,7 @@ export class TigaGame {
     if (this.flying) {
       this.tiga.position.y = THREE.MathUtils.lerp(
         this.tiga.position.y,
-        9.1 + Math.sin(performance.now() * 0.002) * 0.35,
+        (this.spaceFlying ? 22.4 : 9.1) + Math.sin(performance.now() * 0.002) * (this.spaceFlying ? 0.55 : 0.35),
         delta * 3.2,
       );
       return;
@@ -652,6 +658,8 @@ export class TigaGame {
   private enterFlightMode() {
     if (this.flying || this.defeatReason) return;
     this.flying = true;
+    this.spaceFlying = false;
+    this.setSpaceGroundLighting(false);
     this.jumpHoldTimer = 3;
     this.jumpVelocity = 0;
     this.tiga.position.y = Math.max(this.tiga.position.y, 6.2);
@@ -660,9 +668,30 @@ export class TigaGame {
     this.setMessage('空战开始：城市缩小，按 Q/W/Z/X/C/D 发起空中攻击', 2.6);
   }
 
+  private enterSpaceFlightMode() {
+    if (this.defeatReason || this.victory) return;
+    if (this.spaceFlying) {
+      this.setMessage('迪迦已经在宇宙空战层', 1.2);
+      return;
+    }
+    this.flying = true;
+    this.spaceFlying = true;
+    this.setSpaceGroundLighting(true);
+    this.flightTapCount = 0;
+    this.flightTapWindow = 0;
+    this.jumpHoldTimer = 0;
+    this.jumpVelocity = 0;
+    this.tiga.position.y = Math.max(this.tiga.position.y, 12.5);
+    this.effects.impact(this.tiga.position.clone().add(new THREE.Vector3(0, 4.8, 0)), 0xa9c7ff, 3.1);
+    this.audio?.play('transform');
+    this.setMessage('B：进入宇宙空战，城市和星空都在脚下', 2.8);
+  }
+
   private landFromFlight() {
     if (!this.flying || this.defeatReason) return;
     this.flying = false;
+    this.spaceFlying = false;
+    this.setSpaceGroundLighting(false);
     this.flightTapCount = 0;
     this.flightTapWindow = 0;
     this.jumpHoldTimer = 0;
@@ -682,7 +711,9 @@ export class TigaGame {
         monster.object.rotation.z = Math.sin(performance.now() * 0.025) * 0.08;
         continue;
       }
-      if (this.flying && !monster.profile.canFly && !monster.profile.rangedAttack) continue;
+      const cannotReachFlightLevel = this.flying &&
+        (!monster.profile.canFly || (this.spaceFlying && !monster.profile.canSpaceFly));
+      if (cannotReachFlightLevel && !monster.profile.rangedAttack) continue;
       monster.object.rotation.z = THREE.MathUtils.lerp(monster.object.rotation.z, 0, delta * 5);
       monster.attackCooldown -= delta;
       if (monster.knockback > 0) {
@@ -765,7 +796,8 @@ export class TigaGame {
     }
     this.monsters.forEach((monster, monsterIndex) => {
       if (!monster.defeated) {
-        if (this.flying && monster.profile.canFly) {
+        const canMatchFlightLevel = monster.profile.canFly && (!this.spaceFlying || monster.profile.canSpaceFly);
+        if (this.flying && canMatchFlightLevel) {
           monster.object.position.y = THREE.MathUtils.lerp(
             monster.object.position.y,
             this.tiga.position.y - 0.8 + Math.sin(time * 2.8 + monsterIndex) * 0.35,
@@ -841,6 +873,8 @@ export class TigaGame {
     if (this.defeatReason) return;
     this.defeatReason = reason;
     this.flying = false;
+    this.spaceFlying = false;
+    this.setSpaceGroundLighting(false);
     this.jumpHoldTimer = 0;
     this.jumpVelocity = 0;
     this.tiga.position.y = 0;
@@ -915,6 +949,12 @@ export class TigaGame {
     this.energyAlert = '能量已补充，继续战斗';
     this.setMessage('手电筒之光补充完成，继续战斗！', 2.2);
     this.tone(520, 0.35, 'sine');
+  }
+
+  private setSpaceGroundLighting(space: boolean) {
+    const ground = this.scene.getObjectByName('city-ground');
+    if (ground instanceof THREE.Mesh) ground.receiveShadow = !space;
+    this.renderer.shadowMap.enabled = !space;
   }
 
   private setStatueMaterial(stone: boolean) {
@@ -1025,11 +1065,13 @@ export class TigaGame {
     );
     const restCameraZ = this.camera.aspect < 0.65 ? 58 : this.camera.aspect < 0.9 ? 44 : 30;
     const restCameraY = this.camera.aspect < 0.65 ? 15 : this.camera.aspect < 0.9 ? 13 : 11.5;
-    const cameraScale = this.flying ? 1.46 : 1;
+    const cameraScale = this.spaceFlying ? 2.7 : this.flying ? 1.46 : 1;
+    const cameraLift = this.spaceFlying ? 12.5 : this.flying ? 5.2 : 0;
+    const cameraLookY = this.spaceFlying ? 16.5 : this.flying ? 7.5 : 4.15;
     this.camera.position.z = THREE.MathUtils.lerp(this.camera.position.z, restCameraZ * cameraScale, delta * 2.4);
-    this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, restCameraY + (this.flying ? 5.2 : 0), delta * 2.4);
+    this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, restCameraY + cameraLift, delta * 2.4);
     this.camera.position.x = THREE.MathUtils.lerp(this.camera.position.x, targetX, delta * 1.4);
-    this.camera.lookAt(targetX, this.flying ? 7.5 : 4.15, 0);
+    this.camera.lookAt(targetX, cameraLookY, 0);
     this.updateHud();
     this.composer.render();
   };

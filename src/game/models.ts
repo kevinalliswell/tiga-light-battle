@@ -199,8 +199,11 @@ function asphaltBumpTexture() {
 export function createCity(): THREE.Group {
   const city = new THREE.Group();
   const roadMaterial = new THREE.MeshPhysicalMaterial({
-    color: 0x171d21,
-    roughness: 0.78,
+    color: 0x35454d,
+    emissive: 0x15242c,
+    emissiveIntensity: 0.9,
+    roughness: 0.82,
+    side: THREE.DoubleSide,
     metalness: 0.06,
     clearcoat: 0.3,
     clearcoatRoughness: 0.26,
@@ -208,6 +211,7 @@ export function createCity(): THREE.Group {
     bumpScale: 0.035,
   });
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(90, 48), roadMaterial);
+  ground.name = 'city-ground';
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   city.add(ground);
