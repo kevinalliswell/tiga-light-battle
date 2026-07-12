@@ -9,6 +9,9 @@ export type Ability =
   | 'evolution-ray'
   | 'super-lightning';
 export type DefeatReason = 'exhausted' | 'defeated';
+export type RevivalMethod = 'flashlight' | 'belief';
+export type EnergyPhase = 'stable' | 'warning' | 'critical';
+export type RevivalTarget = 'ordinary' | 'gatanothor';
 
 export interface FormStats {
   label: string;
@@ -84,6 +87,16 @@ export function canTransform(form: TigaForm, lightMeter: number): boolean {
   return form !== 'shining' || lightMeter >= 100;
 }
 
+export function getEnergyPhase(energy: number): EnergyPhase {
+  if (energy <= 25) return 'critical';
+  if (energy <= 50) return 'warning';
+  return 'stable';
+}
+
+export function canUseFlashlight(target: RevivalTarget): boolean {
+  return target === 'ordinary';
+}
+
 export function resolveDamage(
   form: TigaForm,
   ability: Ability,
@@ -99,12 +112,12 @@ export function resolveDamage(
   return Math.round(BASE_DAMAGE[ability] * FORM_STATS[form].strength);
 }
 
-export function resolveRevival(reason: DefeatReason): {
+export function resolveRevival(method: RevivalMethod | DefeatReason): {
   form: TigaForm;
   healthRatio: number;
   energyRatio: number;
 } {
-  if (reason === 'defeated') {
+  if (method === 'belief' || method === 'defeated') {
     return { form: 'shining', healthRatio: 1, energyRatio: 1 };
   }
 

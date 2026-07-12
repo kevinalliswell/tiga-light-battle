@@ -3,6 +3,8 @@ import {
   FORM_STATS,
   canTransform,
   canUseAbility,
+  canUseFlashlight,
+  getEnergyPhase,
   resolveDamage,
   resolveRevival,
 } from './rules';
@@ -51,20 +53,38 @@ describe('form abilities', () => {
 });
 
 describe('light revival', () => {
-  it('revives an exhausted stone statue in multi form', () => {
-    expect(resolveRevival('exhausted')).toEqual({
+  it('revives a stone statue with flashlight light in multi form', () => {
+    expect(resolveRevival('flashlight')).toEqual({
       form: 'multi',
       healthRatio: 0.45,
       energyRatio: 0.65,
     });
   });
 
-  it('revives a fully defeated Tiga in shining form through everyone\'s light', () => {
-    expect(resolveRevival('defeated')).toEqual({
+  it('revives a Gatanothor defeat with children\'s belief light in shining form', () => {
+    expect(resolveRevival('belief')).toEqual({
       form: 'shining',
       healthRatio: 1,
       energyRatio: 1,
     });
+  });
+
+  it('allows flashlight revival only against ordinary monsters', () => {
+    expect(canUseFlashlight('ordinary')).toBe(true);
+    expect(canUseFlashlight('gatanothor')).toBe(false);
+  });
+});
+
+describe('energy feedback', () => {
+  it('starts flashing at half energy', () => {
+    expect(getEnergyPhase(51)).toBe('stable');
+    expect(getEnergyPhase(50)).toBe('warning');
+  });
+
+  it('shows a critical prompt at a quarter energy', () => {
+    expect(getEnergyPhase(26)).toBe('warning');
+    expect(getEnergyPhase(25)).toBe('critical');
+    expect(getEnergyPhase(0)).toBe('critical');
   });
 });
 
