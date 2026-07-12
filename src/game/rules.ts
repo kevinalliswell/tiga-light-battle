@@ -96,6 +96,12 @@ export function requiresCloseRange(ability: Ability): boolean {
   return ability === 'punch';
 }
 
+export const FLIGHT_HOLD_SECONDS = 3;
+
+export function canEnterFlight(holdSeconds: number): boolean {
+  return holdSeconds >= FLIGHT_HOLD_SECONDS;
+}
+
 export function canTransform(
   form: TigaForm,
   lightMeter: number,

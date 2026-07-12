@@ -20,6 +20,7 @@ import {
 } from './models';
 import {
   FORM_STATS,
+  canEnterFlight,
   canUseFlashlight,
   canTransform,
   canUseAbility,
@@ -128,6 +129,9 @@ export class TigaGame {
   private attackPoseTimer = 0;
   private attackPose: Ability | 'demogea-finish' = 'punch';
   private jumpVelocity = 0;
+  private jumpHoldTimer = 0;
+  private flying = false;
+  private shiningUnlocked = false;
   private spawnTimer = 0;
   private victory = false;
 
@@ -294,19 +298,28 @@ export class TigaGame {
   }
 
   private handleAction(action: GameAction, pressed: boolean) {
-    if (action === 'move-left' || action === 'move-right' || action === 'guard') {
+    if (action === 'move-left' || action === 'move-right' || action === 'guard' || action === 'jump') {
       if (pressed) this.heldActions.add(action);
       else this.heldActions.delete(action);
+      if (action === 'jump' && pressed) {
+        if (this.flying) {
+          this.flying = false;
+          this.jumpHoldTimer = 0;
+          this.jumpVelocity = -1.5;
+          this.setMessage('迪迦返回地面', 1.2);
+        } else {
+          this.jumpHoldTimer = 0;
+        }
+      }
+      if (action === 'jump' && !pressed && !this.flying && this.jumpHoldTimer < 3 && this.tiga.position.y <= 0.01) {
+        this.jumpVelocity = 8.2;
+      }
       if (pressed && (action === 'move-left' || action === 'move-right')) {
         this.completeTutorialAction('move');
       }
       return;
     }
     if (!pressed || !this.started) return;
-    if (action === 'jump') {
-      if (!this.defeatReason && this.tiga.position.y <= 0.01) this.jumpVelocity = 8.2;
-      return;
-    }
     if (action === 'revive') {
       if (this.defeatReason) this.beginRevival();
       else this.beginFlashlightRecharge();
@@ -325,7 +338,12 @@ export class TigaGame {
 
   private changeForm(nextForm: TigaForm) {
     if (this.defeatReason || this.victory || nextForm === this.form) return;
-    if (!canTransform(nextForm, this.lightMeter)) {
+    if (nextForm === 'shining' && !this.shiningUnlocked) {
+      this.setMessage('只有被加坦杰厄击败并接受信念之光后，才能变成闪耀型', 2.2);
+      this.tone(90, 0.12, 'square');
+      return;
+    }
+    if (!canTransform(nextForm, this.lightMeter, this.shiningUnlocked)) {
       this.setMessage('闪耀光能还没有集满', 1.4);
       this.tone(90, 0.12, 'square');
       return;
@@ -595,6 +613,18 @@ export class TigaGame {
     const direction = Number(this.heldActions.has('move-right')) - Number(this.heldActions.has('move-left'));
     const speed = 5.2 * FORM_STATS[this.form].speed;
     this.tiga.position.x = THREE.MathUtils.clamp(this.tiga.position.x + direction * speed * delta, -18, 17);
+    if (this.flying) {
+      this.tiga.position.y = THREE.MathUtils.lerp(
+        this.tiga.position.y,
+        9.1 + Math.sin(performance.now() * 0.002) * 0.35,
+        delta * 3.2,
+      );
+      return;
+    }
+    if (this.started && this.tutorialStage === 'done' && this.heldActions.has('jump')) {
+      this.jumpHoldTimer += delta;
+      if (canEnterFlight(this.jumpHoldTimer)) this.enterFlightMode();
+    }
     if (this.tiga.position.y > 0 || this.jumpVelocity > 0) {
       this.tiga.position.y += this.jumpVelocity * delta;
       this.jumpVelocity -= 20 * delta;
@@ -603,6 +633,17 @@ export class TigaGame {
         this.jumpVelocity = 0;
       }
     }
+  }
+
+  private enterFlightMode() {
+    if (this.flying || this.defeatReason) return;
+    this.flying = true;
+    this.jumpHoldTimer = 3;
+    this.jumpVelocity = 0;
+    this.tiga.position.y = Math.max(this.tiga.position.y, 6.2);
+    this.effects.impact(this.tiga.position.clone().add(new THREE.Vector3(0, 4.5, 0)), 0x8feaff, 2.2);
+    this.audio?.play('transform');
+    this.setMessage('空战开始：城市缩小，按 Q/W/Z/X/C/D 发起空中攻击', 2.6);
   }
 
   private updateMonsters(delta: number) {
@@ -617,6 +658,7 @@ export class TigaGame {
         monster.object.rotation.z = Math.sin(performance.now() * 0.025) * 0.08;
         continue;
       }
+      if (this.flying && !monster.profile.canFly && !monster.profile.rangedAttack) continue;
       monster.object.rotation.z = THREE.MathUtils.lerp(monster.object.rotation.z, 0, delta * 5);
       monster.attackCooldown -= delta;
       if (monster.knockback > 0) {
@@ -624,7 +666,11 @@ export class TigaGame {
         monster.knockback = Math.max(0, monster.knockback - delta * 8);
       }
       const distance = monster.object.position.x - this.tiga.position.x;
-      if (distance > monster.profile.attackRange) {
+      const horizontalDistance = Math.abs(distance);
+      const inRange = monster.profile.rangedAttack
+        ? horizontalDistance <= monster.profile.attackRange
+        : distance <= monster.profile.attackRange;
+      if (!inRange) {
         monster.object.position.x -= monster.profile.speed * delta;
       } else if (monster.attackCooldown <= 0) {
         const guarding = this.heldActions.has('guard');
@@ -633,6 +679,10 @@ export class TigaGame {
         if (!invulnerable) this.health = Math.max(0, this.health - damage);
         monster.attackCooldown = monster.profile.id === 'melba' ? 1.05 : 1.55;
         const hitPosition = this.tiga.position.clone().add(new THREE.Vector3(0, 4.5, 0));
+        if (monster.profile.rangedAttack) {
+          const beamStart = monster.object.position.clone().add(new THREE.Vector3(0, 5.4, 0));
+          this.effects.beam(beamStart, hitPosition, 0xc95edb, 0.26);
+        }
         this.effects.impact(hitPosition, invulnerable ? 0xffd866 : 0xff5d42, 1.15);
         this.audio?.play('monster-attack');
         if (invulnerable) {
@@ -683,13 +733,25 @@ export class TigaGame {
         rightLeg.rotation.x = THREE.MathUtils.lerp(rightLeg.rotation.x, isKick ? -0.16 * poseProgress : 0, delta * 16);
         leftLeg.rotation.x = THREE.MathUtils.lerp(leftLeg.rotation.x, isKick ? 0.08 * poseProgress : 0, delta * 16);
       }
-      this.tiga.rotation.x = THREE.MathUtils.lerp(this.tiga.rotation.x, isKick ? -0.16 * poseProgress : isPunch ? 0.06 * poseProgress : 0, delta * 14);
+      this.tiga.rotation.x = THREE.MathUtils.lerp(
+        this.tiga.rotation.x,
+        isKick ? -0.16 * poseProgress : isPunch ? 0.06 * poseProgress : this.flying ? -0.28 : 0,
+        delta * 14,
+      );
     }
     this.monsters.forEach((monster, monsterIndex) => {
       if (!monster.defeated) {
-        monster.object.position.y = monster.profile.id === 'melba'
-          ? 1.2 + Math.sin(time * 3 + monsterIndex) * 0.45
-          : Math.sin(time * 2 + monsterIndex) * 0.04;
+        if (this.flying && monster.profile.canFly) {
+          monster.object.position.y = THREE.MathUtils.lerp(
+            monster.object.position.y,
+            this.tiga.position.y - 0.8 + Math.sin(time * 2.8 + monsterIndex) * 0.35,
+            delta * 2.4,
+          );
+        } else if (!this.flying) {
+          monster.object.position.y = monster.profile.id === 'melba'
+            ? 1.2 + Math.sin(time * 3 + monsterIndex) * 0.45
+            : Math.sin(time * 2 + monsterIndex) * 0.04;
+        }
         monster.object.children.forEach((child) => {
           if (child.name.startsWith('tentacle-')) child.rotation.z += Math.sin(time * 1.7 + monsterIndex) * delta * 0.08;
         });
@@ -788,6 +850,7 @@ export class TigaGame {
     if (!this.defeatReason || !this.revivalMethod) return;
     const revival = resolveRevival(this.revivalMethod);
     const usedBelief = this.revivalMethod === 'belief';
+    if (usedBelief) this.shiningUnlocked = true;
     this.setStatueMaterial(false);
     this.setForm(revival.form);
     this.health = revival.healthRatio * 100;
@@ -931,8 +994,13 @@ export class TigaGame {
       -4,
       5,
     );
+    const restCameraZ = this.camera.aspect < 0.65 ? 58 : this.camera.aspect < 0.9 ? 44 : 30;
+    const restCameraY = this.camera.aspect < 0.65 ? 15 : this.camera.aspect < 0.9 ? 13 : 11.5;
+    const cameraScale = this.flying ? 1.46 : 1;
+    this.camera.position.z = THREE.MathUtils.lerp(this.camera.position.z, restCameraZ * cameraScale, delta * 2.4);
+    this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, restCameraY + (this.flying ? 5.2 : 0), delta * 2.4);
     this.camera.position.x = THREE.MathUtils.lerp(this.camera.position.x, targetX, delta * 1.4);
-    this.camera.lookAt(targetX, 4.15, 0);
+    this.camera.lookAt(targetX, this.flying ? 7.5 : 4.15, 0);
     this.updateHud();
     this.composer.render();
   };

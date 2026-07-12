@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   FORM_STATS,
   canTransform,
+  canEnterFlight,
   canUseAbility,
   canUseFlashlight,
   getEnergyPhase,
@@ -38,6 +39,11 @@ describe('Tiga forms', () => {
 });
 
 describe('form abilities', () => {
+  it('requires holding the jump key for three seconds to enter flight', () => {
+    expect(canEnterFlight(2.99)).toBe(false);
+    expect(canEnterFlight(3)).toBe(true);
+  });
+
   it('keeps punches close range while allowing flying kicks to travel', () => {
     expect(requiresCloseRange('punch')).toBe(true);
     expect(requiresCloseRange('kick')).toBe(false);
