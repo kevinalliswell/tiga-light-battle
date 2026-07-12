@@ -25,7 +25,13 @@ describe('monster encounter pools', () => {
   });
 
   it('gives Demogea an air-reaching ranged attack without flight', () => {
-    expect(DEMOGEA_PROFILE.canFly).toBe(false);
+    expect(DEMOGEA_PROFILE.canFly).toBe(true);
+    expect(DEMOGEA_PROFILE.canSpaceFly).toBe(true);
     expect(DEMOGEA_PROFILE.rangedAttack).toBe(true);
+  });
+
+  it('limits Melba to the sky while allowing Kyrieloid into space', () => {
+    expect(MONSTER_PROFILES.find((monster) => monster.id === 'melba')?.canSpaceFly).toBe(false);
+    expect(MONSTER_PROFILES.find((monster) => monster.id === 'kyrieloid')?.canSpaceFly).toBe(true);
   });
 });
