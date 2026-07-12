@@ -7,6 +7,8 @@ interface ActiveEffect {
   update?: (progress: number, delta: number) => void;
 }
 
+export type RevivalSource = 'people' | 'statues';
+
 function disposeObject(object: THREE.Object3D) {
   object.traverse((child) => {
     if (!(child instanceof THREE.Mesh || child instanceof THREE.Line)) return;
@@ -26,10 +28,12 @@ export class Effects {
   private readonly scene: THREE.Scene;
   private readonly effects: ActiveEffect[] = [];
   private readonly crowdPositions: THREE.Vector3[] = [];
+  private readonly statuePositions: THREE.Vector3[] = [];
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
     this.createCrowd();
+    this.createUltramanStatues();
   }
 
   update(delta: number) {
@@ -247,15 +251,22 @@ export class Effects {
     });
   }
 
-  revival(target: THREE.Vector3, everyone: boolean) {
+  revival(target: THREE.Vector3, source: RevivalSource) {
     const group = new THREE.Group();
-    const chosen = everyone ? this.crowdPositions : this.crowdPositions.filter((_, index) => index % 3 === 0);
+    const fromStatues = source === 'statues';
+    const chosen = fromStatues ? this.statuePositions : this.crowdPositions.filter((_, index) => index % 3 === 0);
     chosen.forEach((origin, index) => {
       const length = origin.distanceTo(target);
       const beam = new THREE.Mesh(
         new THREE.CylinderGeometry(0.025, 0.09, length, 6),
         new THREE.MeshBasicMaterial({
-          color: index % 2 === 0 ? 0xffefae : 0xc8f7ff,
+          color: fromStatues
+            ? index % 2 === 0
+              ? 0xffdf78
+              : 0xb9f5ff
+            : index % 2 === 0
+              ? 0xffefae
+              : 0xc8f7ff,
           transparent: true,
           opacity: 0.78,
           depthWrite: false,
@@ -278,7 +289,7 @@ export class Effects {
         });
       },
     });
-    this.impact(target, everyone ? 0xffdd70 : 0xbef7ff, everyone ? 4.5 : 2.4);
+    this.impact(target, fromStatues ? 0xffdd70 : 0xbef7ff, fromStatues ? 4.5 : 2.4);
   }
 
   private createCrowd() {
@@ -302,5 +313,47 @@ export class Effects {
       this.crowdPositions.push(new THREE.Vector3(x, 0.68, z - side * 0.15));
     }
     this.scene.add(crowd);
+  }
+
+  private createUltramanStatues() {
+    const statues = new THREE.Group();
+    const stone = new THREE.MeshStandardMaterial({ color: 0x68757a, roughness: 0.96, metalness: 0.04 });
+    const stoneDark = new THREE.MeshStandardMaterial({ color: 0x414b50, roughness: 0.98, metalness: 0.02 });
+    const statueXs = [-18, -9, 9, 18];
+    statueXs.forEach((x, index) => {
+      const statue = new THREE.Group();
+      const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.38, 1.2, 5, 9), stone);
+      torso.position.y = 1.1;
+      const pelvis = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 8), stone);
+      pelvis.position.y = 0.48;
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 8), stone);
+      head.position.y = 2.15;
+      const crest = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.46, 6), stone);
+      crest.position.y = 2.58;
+      const core = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), stoneDark);
+      core.position.set(0, 1.4, 0.34);
+      const armLeft = new THREE.Mesh(new THREE.CapsuleGeometry(0.14, 0.7, 4, 7), stone);
+      armLeft.position.set(-0.52, 1.25, 0);
+      armLeft.rotation.z = -0.16;
+      const armRight = armLeft.clone();
+      armRight.position.x = 0.52;
+      armRight.rotation.z = 0.16;
+      const legLeft = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.72, 4, 7), stoneDark);
+      legLeft.position.set(-0.2, -0.08, 0);
+      const legRight = legLeft.clone();
+      legRight.position.x = 0.2;
+      statue.add(torso, pelvis, head, crest, core, armLeft, armRight, legLeft, legRight);
+      statue.scale.setScalar(1.38);
+      statue.position.set(x, 0, -8.2);
+      statue.rotation.y = index % 2 === 0 ? 0.16 : -0.16;
+      statue.traverse((object) => {
+        if (!(object instanceof THREE.Mesh)) return;
+        object.castShadow = true;
+        object.receiveShadow = true;
+      });
+      statues.add(statue);
+      this.statuePositions.push(new THREE.Vector3(x, 2.55, -8.2));
+    });
+    this.scene.add(statues);
   }
 }

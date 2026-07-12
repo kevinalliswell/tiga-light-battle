@@ -256,18 +256,18 @@ export class Hud {
       this.setText(
         'revive-kicker',
         snapshot.revivalMethod === 'belief'
-          ? '孩子们的信念之光'
+          ? '奥特曼石像的信念之光'
           : snapshot.defeatReason === 'exhausted'
             ? '能量耗尽'
             : '生命归零',
       );
       this.setText(
         'revive-title',
-        snapshot.revivalMethod === 'belief' ? '让孩子们的光唤醒迪迦' : '迪迦变成了石像',
+        snapshot.revivalMethod === 'belief' ? '让奥特曼石像的光唤醒迪迦' : '迪迦变成了石像',
       );
       this.setText(
         'revive-action',
-        snapshot.revivalMethod === 'belief' ? '汇聚孩子们的信念之光' : '汇聚手电筒之光',
+        snapshot.revivalMethod === 'belief' ? '汇聚奥特曼石像的信念之光' : '汇聚手电筒之光',
       );
       const reviveButton = reviveScreen.querySelector<HTMLButtonElement>('[data-action="revive"]');
       if (reviveButton) reviveButton.disabled = snapshot.reviving;

@@ -735,7 +735,7 @@ export class TigaGame {
     this.heldActions.clear();
     this.setStatueMaterial(true);
     this.setMessage(
-      this.revivalMethod === 'belief' ? '加坦杰厄击碎了迪迦，石像等待孩子们的光' : '迪迦变成了石像',
+      this.revivalMethod === 'belief' ? '加坦杰厄击碎了迪迦，奥特曼石像等待信念之光' : '迪迦变成了石像',
       999,
     );
     this.tone(55, 0.7, 'sawtooth');
@@ -748,9 +748,9 @@ export class TigaGame {
     this.reviving = true;
     this.reviveTimer = 2.4;
     const target = this.tiga.position.clone().add(new THREE.Vector3(0, 4.5, 0));
-    this.effects.revival(target, this.revivalMethod === 'belief');
+    this.effects.revival(target, this.revivalMethod === 'belief' ? 'statues' : 'people');
     this.setMessage(
-      this.revivalMethod === 'belief' ? '孩子们的信念之光正在跨越黑暗' : '画面中的人们打开了手电筒',
+      this.revivalMethod === 'belief' ? '奥特曼石像的信念之光正在汇入迪迦' : '画面中的人们打开了手电筒',
       2.4,
     );
     this.tone(320, 1.6, 'sine');
@@ -771,7 +771,7 @@ export class TigaGame {
     this.defeatReason = null;
     this.revivalMethod = null;
     this.reviving = false;
-    this.setMessage(usedBelief ? '孩子们的信念之光让闪耀迪迦复活！' : '手电筒之光补充了迪迦的能量', 2.5);
+    this.setMessage(usedBelief ? '奥特曼石像的信念之光让闪耀迪迦复活！' : '手电筒之光补充了迪迦的能量', 2.5);
     this.tone(720, 0.5, 'sine');
   }
 
@@ -785,7 +785,7 @@ export class TigaGame {
     this.recharging = true;
     this.reviveTimer = 1.3;
     const target = this.tiga.position.clone().add(new THREE.Vector3(0, 4.5, 0));
-    this.effects.revival(target, false);
+    this.effects.revival(target, 'people');
     this.setMessage('人们打开手电筒，为迪迦补充能量', 1.5);
     this.tone(320, 1, 'sine');
     this.audio?.play('flashlight');

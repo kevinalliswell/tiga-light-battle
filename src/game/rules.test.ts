@@ -81,7 +81,7 @@ describe('light revival', () => {
     });
   });
 
-  it('revives a Gatanothor defeat with children\'s belief light in shining form', () => {
+  it('revives a Gatanothor defeat with Ultraman statues\' belief light in shining form', () => {
     expect(resolveRevival('belief')).toEqual({
       form: 'shining',
       healthRatio: 1,
