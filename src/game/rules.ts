@@ -96,8 +96,12 @@ export function requiresCloseRange(ability: Ability): boolean {
   return ability === 'punch';
 }
 
-export function canTransform(form: TigaForm, lightMeter: number): boolean {
-  return form !== 'shining' || lightMeter >= 100;
+export function canTransform(
+  form: TigaForm,
+  lightMeter: number,
+  defeatedByGatanothor = false,
+): boolean {
+  return form !== 'shining' || (lightMeter >= 100 && defeatedByGatanothor);
 }
 
 export function hasInfiniteEnergy(form: TigaForm): boolean {

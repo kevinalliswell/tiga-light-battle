@@ -63,9 +63,10 @@ describe('form abilities', () => {
     expect(canUseAbility('multi', 'evolution-ray')).toBe(false);
   });
 
-  it('requires a full light meter before shining transformation', () => {
-    expect(canTransform('shining', 99)).toBe(false);
-    expect(canTransform('shining', 100)).toBe(true);
+  it('requires a full light meter and Gatanothor defeat before shining transformation', () => {
+    expect(canTransform('shining', 100, false)).toBe(false);
+    expect(canTransform('shining', 99, true)).toBe(false);
+    expect(canTransform('shining', 100, true)).toBe(true);
   });
 
   it('gives shining form an energy reserve that never drains', () => {

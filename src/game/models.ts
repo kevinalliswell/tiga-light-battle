@@ -11,6 +11,8 @@ export interface MonsterProfile {
   speed: number;
   power: number;
   attackRange: number;
+  canFly: boolean;
+  rangedAttack?: boolean;
   color: number;
   accent: number;
 }
@@ -23,6 +25,7 @@ export const MONSTER_PROFILES: MonsterProfile[] = [
     speed: 1.35,
     power: 15,
     attackRange: 3.5,
+    canFly: false,
     color: 0x514842,
     accent: 0xb24a35,
   },
@@ -33,6 +36,7 @@ export const MONSTER_PROFILES: MonsterProfile[] = [
     speed: 2.55,
     power: 11,
     attackRange: 4.5,
+    canFly: true,
     color: 0x6c4534,
     accent: 0xd3a145,
   },
@@ -43,6 +47,7 @@ export const MONSTER_PROFILES: MonsterProfile[] = [
     speed: 1.85,
     power: 13,
     attackRange: 5,
+    canFly: true,
     color: 0x3d4050,
     accent: 0xa94742,
   },
@@ -55,6 +60,7 @@ export const GATANOTHOR_PROFILE: MonsterProfile = {
   speed: 0.75,
   power: 24,
   attackRange: 6,
+  canFly: false,
   color: 0x17191c,
   accent: 0x59616a,
 };
@@ -65,7 +71,9 @@ export const DEMOGEA_PROFILE: MonsterProfile = {
   maxHealth: 420,
   speed: 0.58,
   power: 30,
-  attackRange: 7,
+  attackRange: 30,
+  canFly: false,
+  rangedAttack: true,
   color: 0x241625,
   accent: 0xb54e7c,
 };

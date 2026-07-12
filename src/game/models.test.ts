@@ -17,4 +17,15 @@ describe('monster encounter pools', () => {
     expect(DEMOGEA_PROFILE.id).toBe('demogea');
     expect(DEMOGEA_PROFILE.maxHealth).toBeGreaterThan(GATANOTHOR_PROFILE.maxHealth);
   });
+
+  it('marks Melba and Kyrieloid as flying opponents', () => {
+    expect(MONSTER_PROFILES.find((monster) => monster.id === 'melba')?.canFly).toBe(true);
+    expect(MONSTER_PROFILES.find((monster) => monster.id === 'kyrieloid')?.canFly).toBe(true);
+    expect(GATANOTHOR_PROFILE.canFly).toBe(false);
+  });
+
+  it('gives Demogea an air-reaching ranged attack without flight', () => {
+    expect(DEMOGEA_PROFILE.canFly).toBe(false);
+    expect(DEMOGEA_PROFILE.rangedAttack).toBe(true);
+  });
 });
