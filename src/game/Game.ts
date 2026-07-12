@@ -654,6 +654,8 @@ export class TigaGame {
       this.tiga.rotation.z = idle;
       const rightArm = this.tiga.getObjectByName('right-arm');
       const leftArm = this.tiga.getObjectByName('left-arm');
+      const rightHand = this.tiga.getObjectByName('right-hand');
+      const leftHand = this.tiga.getObjectByName('left-hand');
       const rightLeg = this.tiga.getObjectByName('right-leg');
       const leftLeg = this.tiga.getObjectByName('left-leg');
       const poseProgress = this.attackPoseTimer > 0
@@ -668,6 +670,12 @@ export class TigaGame {
         leftArm.rotation.x = THREE.MathUtils.lerp(leftArm.rotation.x, leftArmTarget, delta * 18);
         rightArm.rotation.z = THREE.MathUtils.lerp(rightArm.rotation.z, isKick ? -0.18 * poseProgress : 0, delta * 18);
         leftArm.rotation.z = THREE.MathUtils.lerp(leftArm.rotation.z, isKick ? 0.22 * poseProgress : 0, delta * 18);
+      }
+      if (rightHand && leftHand) {
+        rightHand.rotation.z = THREE.MathUtils.lerp(rightHand.rotation.z, isPunch ? -0.24 * poseProgress : isKick ? -0.08 * poseProgress : 0, delta * 20);
+        leftHand.rotation.z = THREE.MathUtils.lerp(leftHand.rotation.z, isKick ? 0.16 * poseProgress : 0, delta * 20);
+        rightHand.scale.x = THREE.MathUtils.lerp(rightHand.scale.x, 0.82 * (1 + (isPunch ? 0.14 : 0)), delta * 20);
+        leftHand.scale.x = THREE.MathUtils.lerp(leftHand.scale.x, 0.82 * (isKick ? 1.06 : 1), delta * 20);
       }
       if (rightLeg && leftLeg) {
         rightLeg.rotation.z = THREE.MathUtils.lerp(rightLeg.rotation.z, isKick ? -1.02 * poseProgress : 0, delta * 16);
