@@ -151,7 +151,7 @@ export class Hud {
         <section class="touch-movement" aria-label="移动控制">
           <button type="button" data-hold-action="move-left" aria-label="向左移动"><i data-lucide="chevron-left"></i></button>
           <button type="button" data-hold-action="guard" aria-label="防御"><i data-lucide="shield"></i></button>
-          <button type="button" data-hold-action="jump" aria-label="跳跃"><i data-lucide="activity"></i></button>
+          <button type="button" data-hold-action="jump" aria-label="长按 3 秒起飞，再按一次返回地面"><i data-lucide="activity"></i></button>
           <button type="button" data-hold-action="move-right" aria-label="向右移动"><i data-lucide="chevron-right"></i></button>
         </section>
 

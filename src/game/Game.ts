@@ -816,6 +816,10 @@ export class TigaGame {
   private turnToStone(reason: DefeatReason) {
     if (this.defeatReason) return;
     this.defeatReason = reason;
+    this.flying = false;
+    this.jumpHoldTimer = 0;
+    this.jumpVelocity = 0;
+    this.tiga.position.y = 0;
     this.revivalMethod = this.isGatanothorBattle() ? 'belief' : 'flashlight';
     this.health = reason === 'defeated' ? 0 : this.health;
     this.energy = normalizeEnergy(this.form, 0);
