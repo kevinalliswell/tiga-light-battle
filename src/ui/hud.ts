@@ -41,6 +41,7 @@ export interface HudSnapshot {
   energyPhase: EnergyPhase;
   energyAlert: string;
   lightMeter: number;
+  shiningUnlocked: boolean;
   monsterName: string;
   monsterHealth: number;
   monsterMaxHealth: number;
@@ -276,7 +277,9 @@ export class Hud {
     this.host.querySelectorAll<HTMLButtonElement>('[data-action^="form-"]').forEach((button) => {
       const form = button.dataset.action?.replace('form-', '') as TigaForm;
       button.setAttribute('aria-pressed', String(form === snapshot.form));
-      button.disabled = !snapshot.started || (form === 'shining' && snapshot.lightMeter < 100);
+      button.disabled =
+        !snapshot.started ||
+        (form === 'shining' && (!snapshot.shiningUnlocked || snapshot.lightMeter < 100));
     });
 
     this.host.querySelectorAll<HTMLButtonElement>('.action-button').forEach((button) => {

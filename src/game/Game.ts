@@ -955,6 +955,7 @@ export class TigaGame {
       energyPhase: this.energyPhase,
       energyAlert: this.energyAlert,
       lightMeter: this.lightMeter,
+      shiningUnlocked: this.shiningUnlocked,
       monsterName: this.currentMonsterName(),
       monsterHealth,
       monsterMaxHealth,
