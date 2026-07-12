@@ -138,7 +138,7 @@ describe('Gatanothor final battle', () => {
 
 describe('Demogea body-burst finisher', () => {
   it('lets key 6 detonate Demogea and leaves Tiga at one energy', () => {
-    expect(resolveDemogeaFinisher('demogea', 72)).toEqual({
+    expect(resolveDemogeaFinisher('shining', 'demogea', 72)).toEqual({
       canUse: true,
       damage: 9999,
       remainingEnergy: 1,
@@ -146,8 +146,12 @@ describe('Demogea body-burst finisher', () => {
   });
 
   it('does not allow the body-burst finisher against another target or at one energy', () => {
-    expect(resolveDemogeaFinisher('gatanothor', 72).canUse).toBe(false);
-    expect(resolveDemogeaFinisher('demogea', 1).canUse).toBe(false);
+    expect(resolveDemogeaFinisher('shining', 'gatanothor', 72).canUse).toBe(false);
+    expect(resolveDemogeaFinisher('shining', 'demogea', 1).canUse).toBe(false);
+  });
+
+  it.each(['power', 'multi', 'sky'] as const)('%s form cannot enter Demogea for the body burst', (form) => {
+    expect(resolveDemogeaFinisher(form, 'demogea', 72).canUse).toBe(false);
   });
 
   it.each([

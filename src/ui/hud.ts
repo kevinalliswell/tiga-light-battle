@@ -287,7 +287,7 @@ export class Hud {
         snapshot.defeatReason !== null ||
         snapshot.recharging ||
         (isDemogeaFinisher
-          ? !snapshot.demogeaBattle || snapshot.playerEnergy <= 1
+          ? !snapshot.demogeaBattle || snapshot.form !== 'shining' || snapshot.playerEnergy <= 1
           : !canUseAbility(snapshot.form, action as Ability));
     });
     const restartButton = this.host.querySelector<HTMLButtonElement>('[data-command="restart"]');

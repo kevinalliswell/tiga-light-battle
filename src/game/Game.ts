@@ -393,7 +393,11 @@ export class TigaGame {
       this.setMessage('迪莫杰厄还没有出现，6键暂时无法使用', 1.5);
       return;
     }
-    const resolution = resolveDemogeaFinisher('demogea', this.energy);
+    if (this.form !== 'shining') {
+      this.setMessage('只有闪耀型才能穿入迪莫杰厄，先按 4 变身', 1.6);
+      return;
+    }
+    const resolution = resolveDemogeaFinisher(this.form, 'demogea', this.energy);
     if (!resolution.canUse) {
       this.setMessage('体内爆破至少需要 2 点能量', 1.4);
       return;

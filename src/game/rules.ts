@@ -124,10 +124,11 @@ export function resolveDamage(
 }
 
 export function resolveDemogeaFinisher(
+  form: TigaForm,
   target: DamageTarget,
   energy: number,
 ): { canUse: boolean; damage: number; remainingEnergy: number } {
-  const canUse = target === 'demogea' && energy > 1;
+  const canUse = form === 'shining' && target === 'demogea' && energy > 1;
   return {
     canUse,
     damage: canUse ? 9999 : 0,
