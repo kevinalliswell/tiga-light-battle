@@ -25,6 +25,7 @@ import {
   canUseAbility,
   getEnergyPhase,
   hasInfiniteEnergy,
+  hasInfiniteHealth,
   resolveDamage,
   resolveDemogeaFinisher,
   resolveRevival,
@@ -329,6 +330,7 @@ export class TigaGame {
     }
     if (nextForm === 'shining') {
       this.lightMeter = 0;
+      this.health = 100;
       this.energy = 100;
       this.energyPhase = 'stable';
       this.energyAlert = '闪耀型能量已充满，不会消耗';
@@ -625,11 +627,19 @@ export class TigaGame {
       } else if (monster.attackCooldown <= 0) {
         const guarding = this.heldActions.has('guard');
         const damage = monster.profile.power * (guarding ? 0.28 : 1);
-        this.health = Math.max(0, this.health - damage);
+        const invulnerable = hasInfiniteHealth(this.form);
+        if (!invulnerable) this.health = Math.max(0, this.health - damage);
         monster.attackCooldown = monster.profile.id === 'melba' ? 1.05 : 1.55;
-        this.effects.impact(this.tiga.position.clone().add(new THREE.Vector3(0, 4.5, 0)), 0xff5d42, 1.15);
+        const hitPosition = this.tiga.position.clone().add(new THREE.Vector3(0, 4.5, 0));
+        this.effects.impact(hitPosition, invulnerable ? 0xffd866 : 0xff5d42, 1.15);
         this.audio?.play('monster-attack');
-        this.setMessage(guarding ? '防御成功，伤害降低' : `${monster.profile.name}发动攻击`, 0.85);
+        if (invulnerable) {
+          this.effects.shield(hitPosition);
+          this.audio?.play('shield');
+          this.setMessage('闪耀型光之铠甲挡住攻击，生命不会下降', 0.95);
+        } else {
+          this.setMessage(guarding ? '防御成功，伤害降低' : `${monster.profile.name}发动攻击`, 0.85);
+        }
         this.tone(78, 0.15, 'sawtooth');
       }
       monster.object.position.x = THREE.MathUtils.clamp(monster.object.position.x, -15, 20);
