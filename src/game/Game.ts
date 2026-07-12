@@ -365,7 +365,7 @@ export class TigaGame {
         this.effects.shield(end);
         this.setMessage(
           target.profile.id === 'demogea'
-            ? '迪莫杰厄的身体挡住了常规攻击，按 6 穿梭爆破'
+            ? '迪莫杰厄的防御挡住了所有攻击，只有 6 键体内爆破有效'
             : '攻击无效！加坦杰厄的防御无法被打破',
           1.8,
         );

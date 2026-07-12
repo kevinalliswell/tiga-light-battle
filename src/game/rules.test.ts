@@ -150,8 +150,14 @@ describe('Demogea body-burst finisher', () => {
     expect(resolveDemogeaFinisher('demogea', 1).canUse).toBe(false);
   });
 
-  it('keeps Demogea protected from regular light attacks', () => {
-    expect(resolveDamage('shining', 'super-lightning', 'demogea')).toBe(0);
-    expect(resolveDamage('multi', 'zeperion', 'demogea')).toBe(0);
+  it.each([
+    ['power', 'punch'],
+    ['power', 'delacium'],
+    ['multi', 'zeperion'],
+    ['sky', 'runboldt'],
+    ['shining', 'evolution-ray'],
+    ['shining', 'super-lightning'],
+  ] as const)('blocks %s form %s against Demogea', (form, ability) => {
+    expect(resolveDamage(form, ability, 'demogea')).toBe(0);
   });
 });
