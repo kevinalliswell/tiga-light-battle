@@ -4,12 +4,14 @@ import {
   canTransform,
   canEnterFlight,
   canEnterFlightFromTaps,
+  canTogglePerspective,
   canUseAbility,
   canUseFlashlight,
   getEnergyPhase,
   hasInfiniteEnergy,
   hasInfiniteHealth,
   normalizeEnergy,
+  PERSPECTIVE_SWITCH_WINDOW_SECONDS,
   requiresCloseRange,
   resolveDamage,
   resolveDemogeaFinisher,
@@ -93,6 +95,19 @@ describe('form abilities', () => {
   it('gives shining form a health reserve that never drops', () => {
     expect(hasInfiniteHealth('shining')).toBe(true);
     expect(hasInfiniteHealth('sky')).toBe(false);
+  });
+});
+
+describe('perspective switching', () => {
+  it('accepts K and N in either order within ten seconds', () => {
+    expect(canTogglePerspective('k', 'n', PERSPECTIVE_SWITCH_WINDOW_SECONDS)).toBe(true);
+    expect(canTogglePerspective('n', 'k', PERSPECTIVE_SWITCH_WINDOW_SECONDS - 0.01)).toBe(true);
+  });
+
+  it('rejects repeated keys and expired perspective combinations', () => {
+    expect(canTogglePerspective('k', 'k', 1)).toBe(false);
+    expect(canTogglePerspective('n', 'n', 1)).toBe(false);
+    expect(canTogglePerspective('k', 'n', PERSPECTIVE_SWITCH_WINDOW_SECONDS + 0.01)).toBe(false);
   });
 });
 

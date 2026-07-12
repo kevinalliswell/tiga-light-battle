@@ -5,7 +5,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import type { GameAction, Hud, HudSnapshot } from '../ui/hud';
+import type { GameAction, Hud, HudSnapshot, PerspectiveMode } from '../ui/hud';
 import { BattleAudio } from './audio';
 import { Effects } from './effects';
 import {
@@ -30,6 +30,8 @@ import {
   hasInfiniteEnergy,
   hasInfiniteHealth,
   normalizeEnergy,
+  canTogglePerspective,
+  PERSPECTIVE_SWITCH_WINDOW_SECONDS,
   requiresCloseRange,
   resolveDamage,
   resolveDemogeaFinisher,
@@ -38,6 +40,7 @@ import {
   type DamageTarget,
   type DefeatReason,
   type EnergyPhase,
+  type PerspectiveKey,
   type RevivalMethod,
   type TigaForm,
 } from './rules';
@@ -78,6 +81,8 @@ const KEY_ACTIONS: Record<string, GameAction> = {
   arrowup: 'jump',
   arrowdown: 'guard',
   b: 'space-flight',
+  k: 'perspective-k',
+  n: 'perspective-n',
   q: 'punch',
   w: 'kick',
   e: 'boomerang',
@@ -138,6 +143,9 @@ export class TigaGame {
   private flightTapWindow = 0;
   private flying = false;
   private spaceFlying = false;
+  private perspective: PerspectiveMode = 'second';
+  private perspectiveKey: PerspectiveKey | null = null;
+  private perspectiveKeyWindow = 0;
   private shiningUnlocked = false;
   private spawnTimer = 0;
   private victory = false;
@@ -330,6 +338,10 @@ export class TigaGame {
     if (!pressed || !this.started) return;
     if (action === 'space-flight') {
       this.enterSpaceFlightMode();
+      return;
+    }
+    if (action === 'perspective-k' || action === 'perspective-n') {
+      this.handlePerspectiveKey(action === 'perspective-k' ? 'k' : 'n');
       return;
     }
     if (action === 'land') {
@@ -595,6 +607,10 @@ export class TigaGame {
       this.flightTapWindow -= delta;
       if (this.flightTapWindow <= 0) this.flightTapCount = 0;
     }
+    if (this.perspectiveKeyWindow > 0) {
+      this.perspectiveKeyWindow -= delta;
+      if (this.perspectiveKeyWindow <= 0) this.perspectiveKey = null;
+    }
 
     if (this.defeatReason) {
       if (this.reviving) {
@@ -685,6 +701,25 @@ export class TigaGame {
     this.effects.impact(this.tiga.position.clone().add(new THREE.Vector3(0, 4.8, 0)), 0xa9c7ff, 3.1);
     this.audio?.play('transform');
     this.setMessage('B：进入宇宙空战，城市和星空都在脚下', 2.8);
+  }
+
+  private handlePerspectiveKey(key: PerspectiveKey) {
+    if (this.defeatReason || this.victory) return;
+    if (canTogglePerspective(this.perspectiveKey, key, this.perspectiveKeyWindow)) {
+      this.perspective = this.perspective === 'first' ? 'second' : 'first';
+      this.perspectiveKey = null;
+      this.perspectiveKeyWindow = 0;
+      this.setTigaVisibility(this.perspective !== 'first');
+      this.audio?.play('transform');
+      this.setMessage(
+        `${this.perspective === 'first' ? '第一视角' : '第二视角'}已开启`,
+        1.8,
+      );
+      return;
+    }
+    this.perspectiveKey = key;
+    this.perspectiveKeyWindow = PERSPECTIVE_SWITCH_WINDOW_SECONDS;
+    this.setMessage(`已按 ${key.toUpperCase()}，10秒内再按另一个键切换视角`, 2.2);
   }
 
   private landFromFlight() {
@@ -957,6 +992,13 @@ export class TigaGame {
     this.renderer.shadowMap.enabled = !space;
   }
 
+  private setTigaVisibility(visible: boolean) {
+    this.tiga.visible = visible;
+    this.tiga.traverse((object) => {
+      object.visible = visible;
+    });
+  }
+
   private setStatueMaterial(stone: boolean) {
     this.tiga.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return;
@@ -1032,6 +1074,7 @@ export class TigaGame {
       reviving: this.reviving,
       recharging: this.recharging,
       tutorialStage: this.tutorialStage,
+      viewMode: this.perspective,
     };
     this.hud.render(snapshot);
   }
@@ -1063,16 +1106,30 @@ export class TigaGame {
       -4,
       5,
     );
+    const firstPersonTargetX = THREE.MathUtils.clamp(
+      this.nearestMonster()?.object.position.x ?? this.tiga.position.x + 8,
+      -18,
+      20,
+    );
     const restCameraZ = this.camera.aspect < 0.65 ? 58 : this.camera.aspect < 0.9 ? 44 : 30;
     const restCameraY = this.camera.aspect < 0.65 ? 15 : this.camera.aspect < 0.9 ? 13 : 11.5;
-    const cameraScale = this.spaceFlying ? 2.7 : this.flying ? 1.46 : 1;
-    const cameraLift = this.spaceFlying ? 12.5 : this.flying ? 5.2 : 0;
-    const cameraLookY = this.spaceFlying ? 16.5 : this.flying ? 7.5 : 4.15;
-    this.camera.position.z = THREE.MathUtils.lerp(this.camera.position.z, restCameraZ * cameraScale, delta * 2.4);
-    this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, restCameraY + cameraLift, delta * 2.4);
-    this.camera.position.x = THREE.MathUtils.lerp(this.camera.position.x, targetX, delta * 1.4);
-    this.camera.lookAt(targetX, cameraLookY, 0);
+    if (this.perspective === 'first') {
+      const eyeY = this.tiga.position.y + 7.45;
+      this.camera.position.z = THREE.MathUtils.lerp(this.camera.position.z, 1.15, delta * 4.8);
+      this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, eyeY, delta * 4.8);
+      this.camera.position.x = THREE.MathUtils.lerp(this.camera.position.x, this.tiga.position.x, delta * 4.8);
+      this.camera.lookAt(firstPersonTargetX, this.tiga.position.y + 5.15, 0);
+    } else {
+      const cameraScale = this.spaceFlying ? 2.7 : this.flying ? 1.46 : 1;
+      const cameraLift = this.spaceFlying ? 12.5 : this.flying ? 5.2 : 0;
+      const cameraLookY = this.spaceFlying ? 16.5 : this.flying ? 7.5 : 4.15;
+      this.camera.position.z = THREE.MathUtils.lerp(this.camera.position.z, restCameraZ * cameraScale, delta * 2.4);
+      this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, restCameraY + cameraLift, delta * 2.4);
+      this.camera.position.x = THREE.MathUtils.lerp(this.camera.position.x, targetX, delta * 1.4);
+      this.camera.lookAt(targetX, cameraLookY, 0);
+    }
     this.updateHud();
+    if (this.perspective === 'first') this.renderer.clear(true, true, true);
     this.composer.render();
   };
 }

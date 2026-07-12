@@ -109,6 +109,22 @@ export function canEnterFlightFromTaps(pressCount: number): boolean {
   return pressCount >= FLIGHT_TAP_COUNT;
 }
 
+export type PerspectiveKey = 'k' | 'n';
+export const PERSPECTIVE_SWITCH_WINDOW_SECONDS = 10;
+
+export function canTogglePerspective(
+  firstKey: PerspectiveKey | null,
+  nextKey: PerspectiveKey,
+  elapsedSeconds: number,
+): boolean {
+  return (
+    firstKey !== null &&
+    firstKey !== nextKey &&
+    elapsedSeconds >= 0 &&
+    elapsedSeconds <= PERSPECTIVE_SWITCH_WINDOW_SECONDS
+  );
+}
+
 export function canTransform(
   form: TigaForm,
   lightMeter: number,

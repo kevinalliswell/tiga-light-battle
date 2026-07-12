@@ -31,9 +31,13 @@ export type GameAction =
   | 'jump'
   | 'land'
   | 'space-flight'
+  | 'perspective-k'
+  | 'perspective-n'
   | 'guard'
   | 'revive'
   | `form-${TigaForm}`;
+
+export type PerspectiveMode = 'first' | 'second';
 
 export interface HudSnapshot {
   started: boolean;
@@ -56,6 +60,7 @@ export interface HudSnapshot {
   reviving: boolean;
   recharging: boolean;
   tutorialStage: TutorialStage;
+  viewMode: PerspectiveMode;
 }
 
 type CombatAction = Ability | 'demogea-finish';
@@ -95,6 +100,7 @@ export class Hud {
 
           <div class="battle-mark" aria-label="当前波次">
             <span>WAVE</span><strong data-hud="wave">01</strong>
+            <small data-hud="view-mode">第二视角</small>
           </div>
 
           <section class="fighter-status fighter-status--monster" aria-label="怪兽状态">
@@ -229,6 +235,7 @@ export class Hud {
     this.setText('monster-health-text', Math.ceil(snapshot.monsterHealth));
     this.setText('monster-count', `${snapshot.monsterCount} TARGET${snapshot.monsterCount === 1 ? '' : 'S'}`);
     this.setText('wave', String(snapshot.wave).padStart(2, '0'));
+    this.setText('view-mode', snapshot.viewMode === 'first' ? '第一视角' : '第二视角');
     this.setText('message', snapshot.message);
     this.setWidth(
       'monster-health',
