@@ -27,7 +27,7 @@ function formPart(
 
 interface TigaSurfaces {
   silver: THREE.MeshPhysicalMaterial;
-  darkSilver: THREE.MeshStandardMaterial;
+  darkSilver: THREE.MeshPhysicalMaterial;
   red: THREE.MeshPhysicalMaterial;
   accent: THREE.MeshPhysicalMaterial;
 }
@@ -35,11 +35,11 @@ interface TigaSurfaces {
 function createArm(side: number, surfaces: TigaSurfaces) {
   const arm = new THREE.Group();
   arm.name = side < 0 ? 'left-arm' : 'right-arm';
-  arm.position.set(side * 1.13, 5.9, 0);
+  arm.position.set(side * 1.2, 5.9, 0);
   arm.rotation.z = -side * 0.1;
 
-  const shoulder = part(new THREE.SphereGeometry(0.45, 24, 16), surfaces.silver);
-  shoulder.scale.set(1.05, 0.9, 0.86);
+  const shoulder = part(new THREE.SphereGeometry(0.52, 28, 20), surfaces.silver);
+  shoulder.scale.set(1.1, 0.92, 0.88);
   arm.add(shoulder);
 
   const shoulderMark = formPart(
@@ -52,7 +52,7 @@ function createArm(side: number, surfaces: TigaSurfaces) {
   arm.add(shoulderMark);
 
   const upperArm = part(
-    new THREE.CylinderGeometry(0.31, 0.36, 1.25, 20, 4),
+    new THREE.CapsuleGeometry(0.34, 0.64, 6, 18),
     surfaces.silver,
     [0, -0.78, 0],
     [1, 1, 0.9],
@@ -77,7 +77,7 @@ function createArm(side: number, surfaces: TigaSurfaces) {
   arm.add(elbow);
 
   const forearm = part(
-    new THREE.CylinderGeometry(0.34, 0.27, 1.25, 20, 4),
+    new THREE.CapsuleGeometry(0.33, 0.64, 6, 18),
     surfaces.silver,
     [0, -2.06, 0],
     [1, 1, 0.92],
@@ -105,10 +105,10 @@ function createArm(side: number, surfaces: TigaSurfaces) {
 function createLeg(side: number, surfaces: TigaSurfaces) {
   const leg = new THREE.Group();
   leg.name = side < 0 ? 'left-leg' : 'right-leg';
-  leg.position.set(side * 0.48, 3.35, 0);
+  leg.position.set(side * 0.52, 3.35, 0);
 
   const thigh = part(
-    new THREE.CylinderGeometry(0.42, 0.47, 1.46, 22, 4),
+    new THREE.CapsuleGeometry(0.45, 0.82, 6, 18),
     surfaces.silver,
     [0, -0.82, 0],
     [1, 1, 0.9],
@@ -134,7 +134,7 @@ function createLeg(side: number, surfaces: TigaSurfaces) {
   leg.add(knee);
 
   const shin = part(
-    new THREE.CylinderGeometry(0.36, 0.4, 1.46, 22, 4),
+    new THREE.CapsuleGeometry(0.38, 0.82, 6, 18),
     surfaces.silver,
     [0, -2.36, 0],
     [1, 1, 0.88],
@@ -162,28 +162,32 @@ export function createTiga(): THREE.Group {
 
   const surfaces: TigaSurfaces = {
     silver: new THREE.MeshPhysicalMaterial({
-      color: 0xbfc7cb,
-      metalness: 0.72,
-      roughness: 0.23,
-      clearcoat: 0.4,
-      clearcoatRoughness: 0.2,
+      color: 0xaebbc3,
+      metalness: 0.84,
+      roughness: 0.19,
+      clearcoat: 0.58,
+      clearcoatRoughness: 0.16,
     }),
-    darkSilver: new THREE.MeshStandardMaterial({
-      color: 0x606a70,
-      metalness: 0.64,
-      roughness: 0.31,
+    darkSilver: new THREE.MeshPhysicalMaterial({
+      color: 0x4c5962,
+      metalness: 0.72,
+      roughness: 0.27,
+      clearcoat: 0.3,
+      clearcoatRoughness: 0.22,
     }),
     red: new THREE.MeshPhysicalMaterial({
       color: FORM_STATS.multi.color,
-      metalness: 0.16,
-      roughness: 0.42,
-      clearcoat: 0.18,
+      metalness: 0.24,
+      roughness: 0.34,
+      clearcoat: 0.32,
+      clearcoatRoughness: 0.2,
     }),
     accent: new THREE.MeshPhysicalMaterial({
       color: FORM_STATS.multi.accent,
-      metalness: 0.14,
-      roughness: 0.44,
-      clearcoat: 0.16,
+      metalness: 0.2,
+      roughness: 0.36,
+      clearcoat: 0.28,
+      clearcoatRoughness: 0.22,
     }),
   };
 
@@ -191,7 +195,7 @@ export function createTiga(): THREE.Group {
     new THREE.SphereGeometry(0.9, 26, 18),
     surfaces.silver,
     [0, 3.42, 0],
-    [1, 0.62, 0.72],
+    [1.06, 0.64, 0.74],
   );
   const abdomen = part(
     new THREE.CylinderGeometry(0.92, 0.7, 1.55, 26, 5),
@@ -203,7 +207,7 @@ export function createTiga(): THREE.Group {
     new THREE.SphereGeometry(1.2, 30, 22),
     surfaces.silver,
     [0, 5.45, 0],
-    [1.08, 0.95, 0.67],
+    [1.16, 1.0, 0.72],
   );
   const neck = part(
     new THREE.CylinderGeometry(0.42, 0.5, 0.55, 22),
@@ -211,7 +215,19 @@ export function createTiga(): THREE.Group {
     [0, 6.62, 0],
     [1, 1, 0.82],
   );
-  tiga.add(pelvis, abdomen, chest, neck);
+  const chestPlate = part(
+    new THREE.SphereGeometry(1.13, 32, 22),
+    surfaces.darkSilver,
+    [0, 5.48, 0.58],
+    [0.94, 0.78, 0.23],
+  );
+  const waistBand = part(
+    new THREE.TorusGeometry(0.76, 0.09, 12, 32),
+    surfaces.accent,
+    [0, 3.9, 0],
+  );
+  waistBand.rotation.x = Math.PI / 2;
+  tiga.add(pelvis, abdomen, chest, chestPlate, waistBand, neck);
 
   for (const side of [-1, 1]) {
     const chestStripe = formPart(
@@ -256,7 +272,7 @@ export function createTiga(): THREE.Group {
     [0.88, 0.62, 0.86],
   );
   const crown = part(
-    new THREE.ConeGeometry(0.22, 1.16, 5),
+    new THREE.ConeGeometry(0.25, 1.18, 8),
     surfaces.silver,
     [0, 8.36, 0.02],
     [1, 1, 0.82],
@@ -272,11 +288,13 @@ export function createTiga(): THREE.Group {
   foreheadGem.scale.set(0.7, 1.25, 0.3);
   tiga.add(foreheadGem);
 
-  const eyeSurface = new THREE.MeshStandardMaterial({
+  const eyeSurface = new THREE.MeshPhysicalMaterial({
     color: 0xf2fdff,
     emissive: 0xbcefff,
-    emissiveIntensity: 5.2,
-    roughness: 0.1,
+    emissiveIntensity: 3.8,
+    roughness: 0.08,
+    clearcoat: 0.5,
+    clearcoatRoughness: 0.12,
   });
   for (const side of [-1, 1]) {
     const templeFin = part(
@@ -295,7 +313,7 @@ export function createTiga(): THREE.Group {
     );
     eyeSocket.rotation.z = -side * 0.12;
     const eye = part(
-      new THREE.SphereGeometry(0.2, 20, 14),
+      new THREE.CapsuleGeometry(0.17, 0.18, 5, 14),
       eyeSurface,
       [side * 0.29, 7.57, 0.695],
       [1.25, 0.46, 0.16],
@@ -319,12 +337,13 @@ export function createTiga(): THREE.Group {
   );
   tiga.add(mouth);
 
-  const timerSurface = new THREE.MeshStandardMaterial({
+  const timerSurface = new THREE.MeshPhysicalMaterial({
     color: 0x8ff5ff,
     emissive: 0x2bbfd6,
-    emissiveIntensity: 5.4,
-    metalness: 0.1,
-    roughness: 0.1,
+    emissiveIntensity: 4.2,
+    metalness: 0.12,
+    roughness: 0.08,
+    clearcoat: 0.5,
   });
   const timerFrame = part(
     new THREE.TorusGeometry(0.21, 0.055, 10, 26),
@@ -342,7 +361,7 @@ export function createTiga(): THREE.Group {
 
   for (const side of [-1, 1]) tiga.add(createArm(side, surfaces), createLeg(side, surfaces));
 
-  tiga.scale.setScalar(0.94);
+  tiga.scale.setScalar(0.98);
   tiga.userData.form = 'multi';
   tiga.traverse((object) => {
     if (object instanceof THREE.Mesh) object.frustumCulled = false;
