@@ -71,7 +71,13 @@ export const DEMOGEA_PROFILE: MonsterProfile = {
 };
 
 function material(color: number, metalness = 0.1, roughness = 0.7) {
-  return new THREE.MeshStandardMaterial({ color, metalness, roughness });
+  return new THREE.MeshPhysicalMaterial({
+    color,
+    metalness,
+    roughness,
+    clearcoat: 0.18,
+    clearcoatRoughness: 0.42,
+  });
 }
 
 function mesh(
@@ -178,10 +184,12 @@ function asphaltBumpTexture() {
 
 export function createCity(): THREE.Group {
   const city = new THREE.Group();
-  const roadMaterial = new THREE.MeshStandardMaterial({
+  const roadMaterial = new THREE.MeshPhysicalMaterial({
     color: 0x171d21,
-    roughness: 0.94,
-    metalness: 0.02,
+    roughness: 0.78,
+    metalness: 0.06,
+    clearcoat: 0.3,
+    clearcoatRoughness: 0.26,
     bumpMap: asphaltBumpTexture(),
     bumpScale: 0.035,
   });
@@ -281,6 +289,9 @@ export function createCity(): THREE.Group {
       );
       lamp.position.set(x, 2.08, z);
       city.add(post, lamp);
+      const streetLight = new THREE.PointLight(0xffc978, 1.35, 8.5, 2);
+      streetLight.position.set(x, 2.08, z);
+      city.add(streetLight);
     }
   }
 

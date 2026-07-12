@@ -2,7 +2,9 @@ import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import type { GameAction, Hud, HudSnapshot } from '../ui/hud';
 import { Effects } from './effects';
 import {
@@ -88,6 +90,7 @@ export class TigaGame {
   private readonly camera = new THREE.PerspectiveCamera(40, 1, 0.1, 180);
   private readonly renderer: THREE.WebGLRenderer;
   private readonly composer: EffectComposer;
+  private readonly ssaoPass: SSAOPass;
   private readonly clock = new THREE.Clock();
   private readonly effects: Effects;
   private readonly hud: Hud;
@@ -132,21 +135,30 @@ export class TigaGame {
     });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.6));
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.VSMShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.22;
+    this.renderer.toneMappingExposure = 1.08;
     container.append(this.renderer.domElement);
 
+    const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
+    this.scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+    pmremGenerator.dispose();
+
     this.composer = new EffectComposer(this.renderer);
+    this.ssaoPass = new SSAOPass(this.scene, this.camera, 1, 1);
+    this.ssaoPass.kernelRadius = 10;
+    this.ssaoPass.minDistance = 0.0015;
+    this.ssaoPass.maxDistance = 0.12;
     this.composer.addPass(new RenderPass(this.scene, this.camera));
+    this.composer.addPass(this.ssaoPass);
     this.composer.addPass(
-      new UnrealBloomPass(new THREE.Vector2(1, 1), 0.48, 0.5, 0.78),
+      new UnrealBloomPass(new THREE.Vector2(1, 1), 0.32, 0.38, 0.84),
     );
     this.composer.addPass(new OutputPass());
 
     this.scene.background = new THREE.Color(0x071019);
-    this.scene.fog = new THREE.FogExp2(0x111d25, 0.014);
+    this.scene.fog = new THREE.FogExp2(0x111d25, 0.011);
     this.camera.position.set(0, 11.5, 30);
     this.camera.lookAt(0, 4.2, 0);
     this.setupWorld();
@@ -164,7 +176,7 @@ export class TigaGame {
 
   private setupWorld() {
     this.createAtmosphere();
-    const hemisphere = new THREE.HemisphereLight(0x9ecfe4, 0x111315, 1.55);
+    const hemisphere = new THREE.HemisphereLight(0x9ecfe4, 0x111315, 1.3);
     this.scene.add(hemisphere);
 
     const keyLight = new THREE.DirectionalLight(0xf4f7ef, 3.2);
@@ -179,9 +191,14 @@ export class TigaGame {
     keyLight.shadow.normalBias = 0.035;
     this.scene.add(keyLight);
 
-    const cityGlow = new THREE.PointLight(0x42bdd6, 48, 38, 1.7);
+    const moonLight = new THREE.DirectionalLight(0x7895c5, 1.25);
+    moonLight.position.set(16, 20, -24);
+    moonLight.target.position.set(0, 3, 0);
+    this.scene.add(moonLight, moonLight.target);
+
+    const cityGlow = new THREE.PointLight(0x42bdd6, 34, 38, 1.7);
     cityGlow.position.set(-13, 8, 8);
-    const dangerGlow = new THREE.PointLight(0xd84b3d, 42, 34, 1.8);
+    const dangerGlow = new THREE.PointLight(0xd84b3d, 32, 34, 1.8);
     dangerGlow.position.set(14, 7, 5);
     const rimLight = new THREE.DirectionalLight(0x8bdfff, 2.2);
     rimLight.position.set(4, 9, -18);
