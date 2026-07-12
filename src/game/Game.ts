@@ -374,7 +374,7 @@ export class TigaGame {
     }
 
     this.energy = normalizeEnergy(this.form, this.energy - cost);
-    this.attackCooldown = ability === 'punch' ? 0.34 : ability === 'kick' ? 0.48 : 0.82;
+    this.attackCooldown = ability === 'punch' ? 0.34 : ability === 'kick' ? 0.72 : 0.82;
     this.attackPoseTimer = this.attackCooldown;
     this.attackPose = ability;
     this.audio?.play(ability);

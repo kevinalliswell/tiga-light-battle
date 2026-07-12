@@ -94,7 +94,7 @@ function createArm(side: number, surfaces: TigaSurfaces) {
 
   const elbow = part(
     new THREE.SphereGeometry(0.31, 20, 14),
-    surfaces.darkSilver,
+    surfaces.silver,
     [0, -1.46, 0],
     [1, 0.84, 0.9],
   );
@@ -163,7 +163,7 @@ function createLeg(side: number, surfaces: TigaSurfaces) {
 
   const knee = part(
     new THREE.SphereGeometry(0.4, 20, 14),
-    surfaces.darkSilver,
+    surfaces.silver,
     [0, -1.61, 0],
     [0.9, 0.78, 0.84],
   );
@@ -264,7 +264,7 @@ export function createTiga(): THREE.Group {
   );
   const chestPlate = part(
     new THREE.SphereGeometry(1.13, 32, 22),
-    surfaces.darkSilver,
+    surfaces.silver,
     [0, 5.48, 0.58],
     [0.9, 0.7, 0.16],
   );
@@ -369,7 +369,7 @@ export function createTiga(): THREE.Group {
       new THREE.CapsuleGeometry(0.17, 0.18, 5, 14),
       eyeSurface,
       [side * 0.29, 7.57, 0.695],
-      [1.25, 0.46, 0.16],
+      [1.4, 0.62, 0.16],
     );
     eye.rotation.z = -side * 0.12;
     tiga.add(eyeSocket, eye);

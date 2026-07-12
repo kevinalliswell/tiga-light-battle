@@ -105,7 +105,7 @@ export class Effects {
       new THREE.CapsuleGeometry(0.24, 0.85, 8, 14),
       new THREE.MeshBasicMaterial({ color: 0xfff4c2, transparent: true, opacity: 0.98 }),
     );
-    core.rotation.z = Math.PI / 2;
+    core.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
     core.position.copy(kickStart);
     group.add(core);
 
@@ -126,7 +126,7 @@ export class Effects {
     this.effects.push({
       object: group,
       age: 0,
-      duration: 0.58,
+      duration: 0.72,
       update: (progress) => {
         const eased = 1 - (1 - progress) ** 3;
         const position = new THREE.Vector3().lerpVectors(kickStart, end, eased);
