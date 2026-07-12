@@ -14,6 +14,7 @@ import {
   MONSTER_PROFILES,
   applyTigaForm,
   createCity,
+  createEarth,
   createMonster,
   createTiga,
   type MonsterProfile,
@@ -22,6 +23,7 @@ import {
   FORM_STATS,
   canEnterFlight,
   canEnterFlightFromTaps,
+  canEnterEarthView,
   FLIGHT_TAP_WINDOW_SECONDS,
   canUseFlashlight,
   canTransform,
@@ -79,7 +81,10 @@ const KEY_ACTIONS: Record<string, GameAction> = {
   arrowleft: 'move-left',
   arrowright: 'move-right',
   arrowup: 'jump',
-  arrowdown: 'guard',
+  arrowdown: 'move-down',
+  f: 'move-forward',
+  j: 'move-back',
+  y: 'guard',
   b: 'space-flight',
   k: 'perspective-k',
   n: 'perspective-n',
@@ -111,6 +116,7 @@ export class TigaGame {
   private readonly hud: Hud;
   private readonly tiga = createTiga();
   private readonly monsters: MonsterState[] = [];
+  private readonly earth = createEarth();
   private readonly heldActions = new Set<GameAction>();
   private readonly originalMaterialState = new Map<
     THREE.Material,
@@ -137,12 +143,20 @@ export class TigaGame {
   private attackCooldown = 0;
   private attackPoseTimer = 0;
   private attackPose: Ability | 'demogea-finish' = 'punch';
+  private demogeaFinisherPhase: 'entry' | 'exit' | null = null;
+  private demogeaFinisherTimer = 0;
+  private demogeaFinisherTarget: MonsterState | null = null;
+  private demogeaFinisherStart = new THREE.Vector3();
+  private demogeaFinisherEnd = new THREE.Vector3();
+  private demogeaBall: THREE.Mesh | null = null;
   private jumpVelocity = 0;
   private jumpHoldTimer = 0;
   private flightTapCount = 0;
   private flightTapWindow = 0;
   private flying = false;
   private spaceFlying = false;
+  private flightUpHoldTimer = 0;
+  private earthView = false;
   private perspective: PerspectiveMode = 'second';
   private perspectiveKey: PerspectiveKey | null = null;
   private perspectiveKeyWindow = 0;
@@ -230,7 +244,8 @@ export class TigaGame {
 
     this.tiga.position.set(-9, 0, 0);
     this.tiga.rotation.y = Math.PI * 0.26;
-    this.scene.add(this.tiga);
+    this.earth.position.set(0, 13, -8);
+    this.scene.add(this.tiga, this.earth);
   }
 
   private createAtmosphere() {
@@ -313,13 +328,19 @@ export class TigaGame {
   }
 
   private handleAction(action: GameAction, pressed: boolean) {
-    if (action === 'move-left' || action === 'move-right' || action === 'guard' || action === 'jump') {
+    if (
+      action === 'move-left' ||
+      action === 'move-right' ||
+      action === 'move-down' ||
+      action === 'move-forward' ||
+      action === 'move-back' ||
+      action === 'guard' ||
+      action === 'jump'
+    ) {
       if (pressed) this.heldActions.add(action);
       else this.heldActions.delete(action);
       if (action === 'jump' && pressed) {
-        if (this.flying) {
-          this.landFromFlight();
-        } else {
+        if (!this.flying) {
           this.jumpHoldTimer = 0;
           if (this.flightTapWindow <= 0) this.flightTapCount = 0;
           this.flightTapCount += 1;
@@ -330,6 +351,7 @@ export class TigaGame {
       if (action === 'jump' && !pressed && !this.flying && this.jumpHoldTimer < 3 && this.tiga.position.y <= 0.01) {
         this.jumpVelocity = 8.2;
       }
+      if (action === 'jump' && !pressed && this.earthView) this.setEarthView(false);
       if (pressed && (action === 'move-left' || action === 'move-right')) {
         this.completeTutorialAction('move');
       }
@@ -485,15 +507,83 @@ export class TigaGame {
     this.attackCooldown = 1.2;
     this.attackPoseTimer = this.attackCooldown;
     this.attackPose = 'demogea-finish';
-    this.audio?.play('demogea-burst');
-    const start = this.tiga.position.clone().add(new THREE.Vector3(1.25, 5.1, 0));
-    const end = target.object.position.clone().add(new THREE.Vector3(0, 4.8, 0));
-    this.effects.demogeaBurst(start, end);
-    target.health = 0;
-    target.knockback = 5;
-    this.tone(920, 0.22, 'sawtooth');
-    this.defeatMonster(target);
+    this.demogeaFinisherPhase = 'entry';
+    this.demogeaFinisherTimer = 0;
+    this.demogeaFinisherTarget = target;
+    this.demogeaFinisherStart.copy(this.tiga.position).add(new THREE.Vector3(1.25, 5.1, 0));
+    this.demogeaFinisherEnd.copy(target.object.position).add(new THREE.Vector3(0, 4.8, 0));
+    this.demogeaBall = new THREE.Mesh(
+      new THREE.SphereGeometry(0.72, 24, 18),
+      new THREE.MeshPhysicalMaterial({
+        color: 0xffe58c,
+        emissive: 0xff9c3f,
+        emissiveIntensity: 4.2,
+        roughness: 0.18,
+        clearcoat: 0.8,
+      }),
+    );
+    this.demogeaBall.position.copy(this.demogeaFinisherStart);
+    this.demogeaBall.castShadow = true;
+    this.scene.add(this.demogeaBall);
+    this.setTigaVisibility(false);
+    this.audio?.play('transform');
+    this.setMessage('6：闪耀迪迦化作光球，钻入迪莫杰厄体内', 2.2);
     this.updateHud();
+  }
+
+  private updateDemogeaFinisher(delta: number) {
+    const target = this.demogeaFinisherTarget;
+    const ball = this.demogeaBall;
+    if (!target || !ball || !this.demogeaFinisherPhase) return;
+    this.demogeaFinisherTimer += delta;
+    if (this.demogeaFinisherPhase === 'entry') {
+      const progress = Math.min(1, this.demogeaFinisherTimer / 0.82);
+      const eased = 1 - (1 - progress) ** 3;
+      ball.position.lerpVectors(this.demogeaFinisherStart, this.demogeaFinisherEnd, eased);
+      ball.position.y += Math.sin(progress * Math.PI) * 1.4;
+      ball.rotation.x += delta * 13;
+      ball.rotation.y += delta * 17;
+      if (progress >= 1) {
+        this.effects.demogeaBurst(ball.position.clone(), this.demogeaFinisherEnd);
+        target.health = 0;
+        target.knockback = 5;
+        this.audio?.play('demogea-burst');
+        this.tone(920, 0.22, 'sawtooth');
+        ball.visible = false;
+        this.demogeaFinisherPhase = 'exit';
+        this.demogeaFinisherTimer = 0;
+        this.tiga.position.x = target.object.position.x - 1.25;
+        this.tiga.position.y = 0;
+        this.setTigaVisibility(this.perspective !== 'first');
+        this.setMessage('体内爆破成功！迪迦从迪莫杰厄体内跳出', 1.8);
+      }
+      return;
+    }
+
+    const progress = Math.min(1, this.demogeaFinisherTimer / 0.78);
+    this.tiga.position.x = target.object.position.x - 1.25 - (1 - progress) * 0.85;
+    this.tiga.position.y = Math.sin(progress * Math.PI) * 4.3;
+    this.tiga.rotation.x = -0.35 + progress * 0.35;
+    if (progress >= 1) {
+      this.tiga.position.y = 0;
+      this.tiga.rotation.x = 0;
+      this.demogeaFinisherPhase = null;
+      this.demogeaFinisherTarget = null;
+      this.setTigaVisibility(this.perspective !== 'first');
+      this.defeatMonster(target);
+      this.disposeDemogeaBall();
+    }
+  }
+
+  private disposeDemogeaBall() {
+    if (!this.demogeaBall) return;
+    this.scene.remove(this.demogeaBall);
+    this.demogeaBall.geometry.dispose();
+    const materials = Array.isArray(this.demogeaBall.material)
+      ? this.demogeaBall.material
+      : [this.demogeaBall.material];
+    materials.forEach((material) => material.dispose());
+    this.demogeaBall = null;
   }
 
   private playAbilityEffect(ability: Ability, start: THREE.Vector3, end: THREE.Vector3) {
@@ -612,6 +702,11 @@ export class TigaGame {
       if (this.perspectiveKeyWindow <= 0) this.perspectiveKey = null;
     }
 
+    if (this.demogeaFinisherPhase) {
+      this.updateDemogeaFinisher(delta);
+      return;
+    }
+
     if (this.defeatReason) {
       if (this.reviving) {
         this.reviveTimer -= delta;
@@ -650,10 +745,31 @@ export class TigaGame {
     const speed = 5.2 * FORM_STATS[this.form].speed;
     this.tiga.position.x = THREE.MathUtils.clamp(this.tiga.position.x + direction * speed * delta, -18, 17);
     if (this.flying) {
+      const vertical = Number(this.heldActions.has('jump')) - Number(this.heldActions.has('move-down'));
+      const depth = Number(this.heldActions.has('move-forward')) - Number(this.heldActions.has('move-back'));
+      const flightSpeed = 4.2 * FORM_STATS[this.form].speed;
+      const minimumAltitude = this.spaceFlying ? 14 : 6.2;
+      const maximumAltitude = this.earthView || this.spaceFlying ? 36 : 18;
+      this.tiga.position.y = THREE.MathUtils.clamp(
+        this.tiga.position.y + vertical * flightSpeed * delta,
+        minimumAltitude,
+        maximumAltitude,
+      );
+      this.tiga.position.z = THREE.MathUtils.clamp(
+        this.tiga.position.z + depth * flightSpeed * delta,
+        -10,
+        10,
+      );
+      if (this.heldActions.has('jump')) {
+        this.flightUpHoldTimer += delta;
+        if (canEnterEarthView(this.flightUpHoldTimer)) this.setEarthView(true);
+      } else {
+        this.flightUpHoldTimer = 0;
+      }
       this.tiga.position.y = THREE.MathUtils.lerp(
         this.tiga.position.y,
-        (this.spaceFlying ? 22.4 : 9.1) + Math.sin(performance.now() * 0.002) * (this.spaceFlying ? 0.55 : 0.35),
-        delta * 3.2,
+        this.tiga.position.y + Math.sin(performance.now() * 0.002) * (this.spaceFlying ? 0.12 : 0.08),
+        delta * 2.1,
       );
       return;
     }
@@ -675,13 +791,15 @@ export class TigaGame {
     if (this.flying || this.defeatReason) return;
     this.flying = true;
     this.spaceFlying = false;
+    this.flightUpHoldTimer = 0;
+    this.setEarthView(false);
     this.setSpaceGroundLighting(false);
     this.jumpHoldTimer = 3;
     this.jumpVelocity = 0;
     this.tiga.position.y = Math.max(this.tiga.position.y, 6.2);
     this.effects.impact(this.tiga.position.clone().add(new THREE.Vector3(0, 4.5, 0)), 0x8feaff, 2.2);
     this.audio?.play('transform');
-    this.setMessage('空战开始：城市缩小，按 Q/W/Z/X/C/D 发起空中攻击', 2.6);
+    this.setMessage('空战开始：←→横移，↑↓升降，F/J前后，Y防御，7落地', 3.2);
   }
 
   private enterSpaceFlightMode() {
@@ -692,6 +810,8 @@ export class TigaGame {
     }
     this.flying = true;
     this.spaceFlying = true;
+    this.flightUpHoldTimer = 0;
+    this.setEarthView(false);
     this.setSpaceGroundLighting(true);
     this.flightTapCount = 0;
     this.flightTapWindow = 0;
@@ -700,7 +820,21 @@ export class TigaGame {
     this.tiga.position.y = Math.max(this.tiga.position.y, 12.5);
     this.effects.impact(this.tiga.position.clone().add(new THREE.Vector3(0, 4.8, 0)), 0xa9c7ff, 3.1);
     this.audio?.play('transform');
-    this.setMessage('B：进入宇宙空战，城市和星空都在脚下', 2.8);
+    this.setMessage('B：进入宇宙空战，↑↓调整高度，F/J前后移动，Y防御', 3.2);
+  }
+
+  private setEarthView(enabled: boolean) {
+    if (this.earthView === enabled) return;
+    this.earthView = enabled;
+    this.earth.visible = enabled;
+    if (enabled) {
+      this.tiga.position.y = Math.max(this.tiga.position.y, 31);
+      this.effects.impact(this.tiga.position.clone().add(new THREE.Vector3(0, 3.8, 0)), 0x78d9ff, 3.4);
+      this.audio?.play('transform');
+      this.setMessage('地球观景：持续按住↑可从高空看见旋转的地球', 3.2);
+    } else if (this.flying) {
+      this.setMessage('返回飞行战场：↑↓调整高度，F/J前后移动', 2.2);
+    }
   }
 
   private handlePerspectiveKey(key: PerspectiveKey) {
@@ -726,11 +860,14 @@ export class TigaGame {
     if (!this.flying || this.defeatReason) return;
     this.flying = false;
     this.spaceFlying = false;
+    this.flightUpHoldTimer = 0;
+    this.setEarthView(false);
     this.setSpaceGroundLighting(false);
     this.flightTapCount = 0;
     this.flightTapWindow = 0;
     this.jumpHoldTimer = 0;
     this.jumpVelocity = -3.8;
+    this.tiga.position.z = THREE.MathUtils.clamp(this.tiga.position.z, -8, 8);
     this.setMessage('7：迪迦返回地面', 1.2);
   }
 
@@ -746,9 +883,11 @@ export class TigaGame {
         monster.object.rotation.z = Math.sin(performance.now() * 0.025) * 0.08;
         continue;
       }
+      const rangedAttackAllowed = monster.profile.rangedAttack === true &&
+        (!this.spaceFlying || monster.profile.rangedAttackInSpace === true);
       const cannotReachFlightLevel = this.flying &&
         (!monster.profile.canFly || (this.spaceFlying && !monster.profile.canSpaceFly));
-      if (cannotReachFlightLevel && !monster.profile.rangedAttack) continue;
+      if (cannotReachFlightLevel && !rangedAttackAllowed) continue;
       monster.object.rotation.z = THREE.MathUtils.lerp(monster.object.rotation.z, 0, delta * 5);
       monster.attackCooldown -= delta;
       if (monster.knockback > 0) {
@@ -769,9 +908,13 @@ export class TigaGame {
         if (!invulnerable) this.health = Math.max(0, this.health - damage);
         monster.attackCooldown = monster.profile.id === 'melba' ? 1.05 : 1.55;
         const hitPosition = this.tiga.position.clone().add(new THREE.Vector3(0, 4.5, 0));
-        if (monster.profile.rangedAttack) {
+        if (rangedAttackAllowed) {
           const beamStart = monster.object.position.clone().add(new THREE.Vector3(0, 5.4, 0));
-          this.effects.beam(beamStart, hitPosition, 0xc95edb, 0.26);
+          if (monster.profile.id === 'demogea') {
+            this.effects.demogeaVolley(beamStart, hitPosition, monster.profile.rangedBeamCount ?? 7);
+          } else {
+            this.effects.beam(beamStart, hitPosition, 0xc95edb, 0.26);
+          }
         }
         this.effects.impact(hitPosition, invulnerable ? 0xffd866 : 0xff5d42, 1.15);
         this.audio?.play('monster-attack');
@@ -791,7 +934,17 @@ export class TigaGame {
     const time = performance.now() * 0.001;
     if (!this.defeatReason) {
       const idle = Math.sin(time * 2.4) * 0.035;
-      this.tiga.rotation.z = idle;
+      const lateralInput = Number(this.heldActions.has('move-right')) - Number(this.heldActions.has('move-left'));
+      const depthInput = Number(this.heldActions.has('move-forward')) - Number(this.heldActions.has('move-back'));
+      const verticalInput = Number(this.heldActions.has('jump')) - Number(this.heldActions.has('move-down'));
+      const flightRoll = this.flying ? -lateralInput * 0.24 : idle;
+      const flightPitch = this.flying ? -0.28 - verticalInput * 0.12 + depthInput * 0.08 : 0;
+      this.tiga.rotation.z = THREE.MathUtils.lerp(this.tiga.rotation.z, flightRoll, delta * 10);
+      this.tiga.rotation.y = THREE.MathUtils.lerp(
+        this.tiga.rotation.y,
+        Math.PI * 0.26 + (this.flying ? lateralInput * 0.08 + depthInput * 0.12 : 0),
+        delta * 8,
+      );
       const rightArm = this.tiga.getObjectByName('right-arm');
       const leftArm = this.tiga.getObjectByName('left-arm');
       const rightHand = this.tiga.getObjectByName('right-hand');
@@ -803,19 +956,47 @@ export class TigaGame {
         : 0;
       const isKick = this.attackPose === 'kick';
       const isPunch = this.attackPose === 'punch';
+      const isBeam = ['delacium', 'zeperion', 'runboldt', 'evolution-ray', 'super-lightning'].includes(this.attackPose);
+      const gestureWave = Math.sin(time * 18) * poseProgress * 0.06;
       if (rightArm && leftArm) {
-        const rightArmTarget = isKick ? -0.26 * poseProgress : isPunch ? -1.3 * poseProgress : 0;
-        const leftArmTarget = isKick ? 0.45 * poseProgress : this.attackPose.includes('lightning') ? -1.1 * poseProgress : 0;
+        const rightArmTarget = isKick
+          ? -0.26 * poseProgress
+          : isPunch
+            ? -1.3 * poseProgress
+            : isBeam
+              ? -(this.attackPose === 'runboldt' ? 0.78 : 1.02) * poseProgress
+              : 0;
+        const leftArmTarget = isKick
+          ? 0.45 * poseProgress
+          : isBeam
+            ? -(this.attackPose === 'delacium' ? 0.34 : this.attackPose === 'super-lightning' ? 1.18 : 0.92) * poseProgress
+            : 0;
         rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, rightArmTarget, delta * 18);
         leftArm.rotation.x = THREE.MathUtils.lerp(leftArm.rotation.x, leftArmTarget, delta * 18);
-        rightArm.rotation.z = THREE.MathUtils.lerp(rightArm.rotation.z, isKick ? -0.18 * poseProgress : 0, delta * 18);
-        leftArm.rotation.z = THREE.MathUtils.lerp(leftArm.rotation.z, isKick ? 0.22 * poseProgress : 0, delta * 18);
+        rightArm.rotation.z = THREE.MathUtils.lerp(
+          rightArm.rotation.z,
+          isKick ? -0.18 * poseProgress : isBeam ? -0.12 * poseProgress + gestureWave : 0,
+          delta * 18,
+        );
+        leftArm.rotation.z = THREE.MathUtils.lerp(
+          leftArm.rotation.z,
+          isKick ? 0.22 * poseProgress : isBeam ? 0.16 * poseProgress - gestureWave : 0,
+          delta * 18,
+        );
       }
       if (rightHand && leftHand) {
-        rightHand.rotation.z = THREE.MathUtils.lerp(rightHand.rotation.z, isPunch ? -0.24 * poseProgress : isKick ? -0.08 * poseProgress : 0, delta * 20);
-        leftHand.rotation.z = THREE.MathUtils.lerp(leftHand.rotation.z, isKick ? 0.16 * poseProgress : 0, delta * 20);
-        rightHand.scale.x = THREE.MathUtils.lerp(rightHand.scale.x, 0.82 * (1 + (isPunch ? 0.14 : 0)), delta * 20);
-        leftHand.scale.x = THREE.MathUtils.lerp(leftHand.scale.x, 0.82 * (isKick ? 1.06 : 1), delta * 20);
+        rightHand.rotation.z = THREE.MathUtils.lerp(
+          rightHand.rotation.z,
+          isPunch ? -0.24 * poseProgress : isKick ? -0.08 * poseProgress : isBeam ? -0.18 * poseProgress : 0,
+          delta * 20,
+        );
+        leftHand.rotation.z = THREE.MathUtils.lerp(
+          leftHand.rotation.z,
+          isKick ? 0.16 * poseProgress : isBeam ? 0.14 * poseProgress : 0,
+          delta * 20,
+        );
+        rightHand.scale.x = THREE.MathUtils.lerp(rightHand.scale.x, 0.82 * (1 + (isPunch || isBeam ? 0.14 : 0)), delta * 20);
+        leftHand.scale.x = THREE.MathUtils.lerp(leftHand.scale.x, 0.82 * (isKick || isBeam ? 1.06 : 1), delta * 20);
       }
       if (rightLeg && leftLeg) {
         rightLeg.rotation.z = THREE.MathUtils.lerp(rightLeg.rotation.z, isKick ? -1.02 * poseProgress : 0, delta * 16);
@@ -825,7 +1006,7 @@ export class TigaGame {
       }
       this.tiga.rotation.x = THREE.MathUtils.lerp(
         this.tiga.rotation.x,
-        isKick ? -0.16 * poseProgress : isPunch ? 0.06 * poseProgress : this.flying ? -0.28 : 0,
+        isKick ? -0.16 * poseProgress : isPunch ? 0.06 * poseProgress : isBeam ? -0.1 * poseProgress : flightPitch,
         delta * 14,
       );
     }
@@ -1075,6 +1256,8 @@ export class TigaGame {
       recharging: this.recharging,
       tutorialStage: this.tutorialStage,
       viewMode: this.perspective,
+      flying: this.flying,
+      earthView: this.earthView,
     };
     this.hud.render(snapshot);
   }
@@ -1113,7 +1296,12 @@ export class TigaGame {
     );
     const restCameraZ = this.camera.aspect < 0.65 ? 58 : this.camera.aspect < 0.9 ? 44 : 30;
     const restCameraY = this.camera.aspect < 0.65 ? 15 : this.camera.aspect < 0.9 ? 13 : 11.5;
-    if (this.perspective === 'first') {
+    if (this.earthView) {
+      this.camera.position.z = THREE.MathUtils.lerp(this.camera.position.z, 54, delta * 1.5);
+      this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, 35, delta * 1.5);
+      this.camera.position.x = THREE.MathUtils.lerp(this.camera.position.x, 0, delta * 1.5);
+      this.camera.lookAt(0, 10, -8);
+    } else if (this.perspective === 'first') {
       const eyeY = this.tiga.position.y + 7.45;
       this.camera.position.z = THREE.MathUtils.lerp(this.camera.position.z, 1.15, delta * 4.8);
       this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, eyeY, delta * 4.8);
@@ -1128,6 +1316,7 @@ export class TigaGame {
       this.camera.position.x = THREE.MathUtils.lerp(this.camera.position.x, targetX, delta * 1.4);
       this.camera.lookAt(targetX, cameraLookY, 0);
     }
+    if (this.earthView) this.earth.rotation.y += delta * 0.08;
     this.updateHud();
     if (this.perspective === 'first') this.renderer.clear(true, true, true);
     this.composer.render();

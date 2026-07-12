@@ -28,6 +28,9 @@ export type GameAction =
   | 'demogea-finish'
   | 'move-left'
   | 'move-right'
+  | 'move-down'
+  | 'move-forward'
+  | 'move-back'
   | 'jump'
   | 'land'
   | 'space-flight'
@@ -61,6 +64,8 @@ export interface HudSnapshot {
   recharging: boolean;
   tutorialStage: TutorialStage;
   viewMode: PerspectiveMode;
+  flying: boolean;
+  earthView: boolean;
 }
 
 type CombatAction = Ability | 'demogea-finish';
@@ -101,6 +106,7 @@ export class Hud {
           <div class="battle-mark" aria-label="当前波次">
             <span>WAVE</span><strong data-hud="wave">01</strong>
             <small data-hud="view-mode">第二视角</small>
+            <small data-hud="flight-mode">地面</small>
           </div>
 
           <section class="fighter-status fighter-status--monster" aria-label="怪兽状态">
@@ -160,7 +166,7 @@ export class Hud {
         <section class="touch-movement" aria-label="移动控制">
           <button type="button" data-hold-action="move-left" aria-label="向左移动"><i data-lucide="chevron-left"></i></button>
           <button type="button" data-hold-action="guard" aria-label="防御"><i data-lucide="shield"></i></button>
-          <button type="button" data-hold-action="jump" aria-label="长按 3 秒起飞，再按一次返回地面"><i data-lucide="activity"></i></button>
+          <button type="button" data-hold-action="jump" aria-label="连续按三次上键起飞，飞行时按住上键十秒观察地球"><i data-lucide="activity"></i></button>
           <button type="button" data-hold-action="move-right" aria-label="向右移动"><i data-lucide="chevron-right"></i></button>
         </section>
 
@@ -236,6 +242,7 @@ export class Hud {
     this.setText('monster-count', `${snapshot.monsterCount} TARGET${snapshot.monsterCount === 1 ? '' : 'S'}`);
     this.setText('wave', String(snapshot.wave).padStart(2, '0'));
     this.setText('view-mode', snapshot.viewMode === 'first' ? '第一视角' : '第二视角');
+    this.setText('flight-mode', snapshot.earthView ? '地球观景' : snapshot.flying ? '空中飞行' : '地面');
     this.setText('message', snapshot.message);
     this.setWidth(
       'monster-health',

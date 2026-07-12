@@ -14,6 +14,8 @@ export interface MonsterProfile {
   canFly: boolean;
   canSpaceFly: boolean;
   rangedAttack?: boolean;
+  rangedAttackInSpace?: boolean;
+  rangedBeamCount?: number;
   color: number;
   accent: number;
 }
@@ -77,9 +79,11 @@ export const DEMOGEA_PROFILE: MonsterProfile = {
   speed: 0.58,
   power: 30,
   attackRange: 30,
-  canFly: true,
-  canSpaceFly: true,
+  canFly: false,
+  canSpaceFly: false,
   rangedAttack: true,
+  rangedAttackInSpace: false,
+  rangedBeamCount: 7,
   color: 0x241625,
   accent: 0xb54e7c,
 };
@@ -314,4 +318,82 @@ export function createCity(): THREE.Group {
   }
 
   return city;
+}
+
+export function createEarth(): THREE.Group {
+  const earth = new THREE.Group();
+  earth.name = 'earth-view';
+
+  const ocean = new THREE.Mesh(
+    new THREE.SphereGeometry(5.6, 48, 32),
+    new THREE.MeshPhysicalMaterial({
+      color: 0x1c6aa3,
+      metalness: 0.08,
+      roughness: 0.48,
+      clearcoat: 0.66,
+      clearcoatRoughness: 0.2,
+      emissive: 0x062544,
+      emissiveIntensity: 0.3,
+    }),
+  );
+  earth.add(ocean);
+
+  const continentMaterial = new THREE.MeshStandardMaterial({
+    color: 0x5d9b57,
+    roughness: 0.94,
+    metalness: 0.02,
+    side: THREE.DoubleSide,
+  });
+  const continents: Array<[number, number, number, number]> = [
+    [0.45, 0.2, 1.9, 1.15],
+    [0.12, 1.35, 1.55, 0.82],
+    [-0.38, 2.42, 1.72, 0.88],
+    [-0.56, -1.8, 1.3, 0.66],
+    [0.65, -2.4, 1.4, 0.72],
+    [-0.08, -0.55, 1.15, 0.58],
+  ];
+  continents.forEach(([latitude, longitude, width, height]) => {
+    const radius = 5.82;
+    const position = new THREE.Vector3(
+      radius * Math.cos(latitude) * Math.cos(longitude),
+      radius * Math.sin(latitude),
+      radius * Math.cos(latitude) * Math.sin(longitude),
+    );
+    const patch = new THREE.Mesh(new THREE.CircleGeometry(1, 18), continentMaterial);
+    patch.position.copy(position);
+    patch.scale.set(width, height, 1);
+    patch.lookAt(new THREE.Vector3(0, 0, 0));
+    patch.renderOrder = 10;
+    earth.add(patch);
+  });
+
+  const cloudLayer = new THREE.Mesh(
+    new THREE.SphereGeometry(5.82, 40, 24),
+    new THREE.MeshBasicMaterial({
+      color: 0xd8f4ff,
+      transparent: true,
+      opacity: 0.09,
+      wireframe: true,
+      depthWrite: false,
+    }),
+  );
+  cloudLayer.name = 'earth-clouds';
+  earth.add(cloudLayer);
+
+  const atmosphere = new THREE.Mesh(
+    new THREE.SphereGeometry(6.2, 40, 24),
+    new THREE.MeshBasicMaterial({
+      color: 0x67c9ff,
+      transparent: true,
+      opacity: 0.18,
+      side: THREE.BackSide,
+      depthWrite: false,
+    }),
+  );
+  earth.add(atmosphere);
+  earth.visible = false;
+  earth.renderOrder = 8;
+  cloudLayer.renderOrder = 8;
+  atmosphere.renderOrder = 8;
+  return earth;
 }

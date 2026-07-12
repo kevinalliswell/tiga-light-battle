@@ -76,6 +76,24 @@ export class Effects {
     this.impact(end, color, 1.6);
   }
 
+  demogeaVolley(start: THREE.Vector3, end: THREE.Vector3, smallBeamCount = 7) {
+    this.beam(start, end, 0xe66bff, 0.48);
+    const center = (smallBeamCount - 1) / 2;
+    for (let index = 0; index < smallBeamCount; index += 1) {
+      const offset = new THREE.Vector3(
+        0,
+        (index - center) * 0.34,
+        Math.sin(index * 1.7) * 0.32,
+      );
+      this.beam(
+        start.clone().add(offset),
+        end.clone().addScaledVector(offset, 0.72),
+        index % 2 === 0 ? 0xb96bff : 0x8d9dff,
+        0.075,
+      );
+    }
+  }
+
   boomerang(start: THREE.Vector3, end: THREE.Vector3) {
     const disc = new THREE.Mesh(
       new THREE.TorusGeometry(0.58, 0.13, 8, 24, Math.PI * 1.35),

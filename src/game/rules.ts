@@ -109,6 +109,12 @@ export function canEnterFlightFromTaps(pressCount: number): boolean {
   return pressCount >= FLIGHT_TAP_COUNT;
 }
 
+export const EARTH_VIEW_HOLD_SECONDS = 10;
+
+export function canEnterEarthView(holdSeconds: number): boolean {
+  return holdSeconds >= EARTH_VIEW_HOLD_SECONDS;
+}
+
 export type PerspectiveKey = 'k' | 'n';
 export const PERSPECTIVE_SWITCH_WINDOW_SECONDS = 10;
 

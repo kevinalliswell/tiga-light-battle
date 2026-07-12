@@ -4,6 +4,7 @@ import {
   canTransform,
   canEnterFlight,
   canEnterFlightFromTaps,
+  canEnterEarthView,
   canTogglePerspective,
   canUseAbility,
   canUseFlashlight,
@@ -12,6 +13,7 @@ import {
   hasInfiniteHealth,
   normalizeEnergy,
   PERSPECTIVE_SWITCH_WINDOW_SECONDS,
+  EARTH_VIEW_HOLD_SECONDS,
   requiresCloseRange,
   resolveDamage,
   resolveDemogeaFinisher,
@@ -51,6 +53,11 @@ describe('form abilities', () => {
     expect(canEnterFlightFromTaps(2)).toBe(false);
     expect(canEnterFlightFromTaps(3)).toBe(true);
     expect(canEnterFlightFromTaps(5)).toBe(true);
+  });
+
+  it('opens the earth view after holding up for ten seconds in flight', () => {
+    expect(canEnterEarthView(EARTH_VIEW_HOLD_SECONDS - 0.01)).toBe(false);
+    expect(canEnterEarthView(EARTH_VIEW_HOLD_SECONDS)).toBe(true);
   });
 
   it('keeps punches close range while allowing flying kicks to travel', () => {

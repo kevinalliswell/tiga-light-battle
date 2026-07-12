@@ -24,10 +24,12 @@ describe('monster encounter pools', () => {
     expect(GATANOTHOR_PROFILE.canFly).toBe(false);
   });
 
-  it('gives Demogea an air-reaching ranged attack without flight', () => {
-    expect(DEMOGEA_PROFILE.canFly).toBe(true);
-    expect(DEMOGEA_PROFILE.canSpaceFly).toBe(true);
+  it('gives Demogea a ground-only ranged attack', () => {
+    expect(DEMOGEA_PROFILE.canFly).toBe(false);
+    expect(DEMOGEA_PROFILE.canSpaceFly).toBe(false);
     expect(DEMOGEA_PROFILE.rangedAttack).toBe(true);
+    expect(DEMOGEA_PROFILE.rangedBeamCount).toBeGreaterThan(1);
+    expect(DEMOGEA_PROFILE.rangedAttackInSpace).toBe(false);
   });
 
   it('limits Melba to the sky while allowing Kyrieloid into space', () => {
