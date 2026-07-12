@@ -26,6 +26,7 @@ import {
   getEnergyPhase,
   hasInfiniteEnergy,
   hasInfiniteHealth,
+  normalizeEnergy,
   resolveDamage,
   resolveDemogeaFinisher,
   resolveRevival,
@@ -371,7 +372,7 @@ export class TigaGame {
       return;
     }
 
-    this.energy = Math.max(0, this.energy - cost);
+    this.energy = normalizeEnergy(this.form, this.energy - cost);
     this.attackCooldown = ability === 'punch' ? 0.34 : ability === 'kick' ? 0.48 : 0.82;
     this.attackPoseTimer = this.attackCooldown;
     this.attackPose = ability;
@@ -432,7 +433,7 @@ export class TigaGame {
       return;
     }
 
-    this.energy = resolution.remainingEnergy;
+    this.energy = normalizeEnergy(this.form, resolution.remainingEnergy);
     this.energyPhase = getEnergyPhase(this.energy);
     this.energyAlert = '闪耀型能量保持充满，体内爆破完成';
     this.attackCooldown = 1.2;
@@ -570,12 +571,9 @@ export class TigaGame {
     this.updatePlayer(delta);
     if (this.tutorialStage !== 'done') return;
     this.updateMonsters(delta);
-    if (hasInfiniteEnergy(this.form)) {
-      this.energy = 100;
-      this.energyPhase = 'stable';
-    } else {
-      this.energy = Math.max(0, this.energy - delta * 0.24);
-    }
+    const energyDrain = hasInfiniteEnergy(this.form) ? 0 : delta * 0.24;
+    this.energy = normalizeEnergy(this.form, this.energy - energyDrain);
+    if (hasInfiniteEnergy(this.form)) this.energyPhase = 'stable';
     this.updateEnergyPhase();
     if (this.health <= 0) this.turnToStone('defeated');
     else if (this.energy <= 0 && !this.isGatanothorBattle()) this.turnToStone('exhausted');
@@ -730,7 +728,7 @@ export class TigaGame {
     this.defeatReason = reason;
     this.revivalMethod = this.isGatanothorBattle() ? 'belief' : 'flashlight';
     this.health = reason === 'defeated' ? 0 : this.health;
-    this.energy = 0;
+    this.energy = normalizeEnergy(this.form, 0);
     this.energyPhase = 'critical';
     this.heldActions.clear();
     this.setStatueMaterial(true);
@@ -765,7 +763,7 @@ export class TigaGame {
     this.setStatueMaterial(false);
     this.setForm(revival.form);
     this.health = revival.healthRatio * 100;
-    this.energy = revival.energyRatio * 100;
+    this.energy = normalizeEnergy(this.form, revival.energyRatio * 100);
     this.energyPhase = 'stable';
     this.energyAlert = '能量状态稳定';
     this.defeatReason = null;
@@ -793,7 +791,7 @@ export class TigaGame {
 
   private finishFlashlightRecharge() {
     this.recharging = false;
-    this.energy = 65;
+    this.energy = normalizeEnergy(this.form, 65);
     this.energyPhase = 'warning';
     this.energyAlert = '能量已补充，继续战斗';
     this.setMessage('手电筒之光补充完成，继续战斗！', 2.2);

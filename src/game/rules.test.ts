@@ -7,6 +7,7 @@ import {
   getEnergyPhase,
   hasInfiniteEnergy,
   hasInfiniteHealth,
+  normalizeEnergy,
   resolveDamage,
   resolveDemogeaFinisher,
   resolveRevival,
@@ -64,6 +65,9 @@ describe('form abilities', () => {
   it('gives shining form an energy reserve that never drains', () => {
     expect(hasInfiniteEnergy('shining')).toBe(true);
     expect(hasInfiniteEnergy('multi')).toBe(false);
+    expect(normalizeEnergy('shining', 1)).toBe(100);
+    expect(normalizeEnergy('shining', 0)).toBe(100);
+    expect(normalizeEnergy('multi', 1)).toBe(1);
   });
 
   it('gives shining form a health reserve that never drops', () => {

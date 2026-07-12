@@ -104,6 +104,10 @@ export function hasInfiniteHealth(form: TigaForm): boolean {
   return form === 'shining';
 }
 
+export function normalizeEnergy(form: TigaForm, energy: number): number {
+  return hasInfiniteEnergy(form) ? 100 : Math.max(0, energy);
+}
+
 export function getEnergyPhase(energy: number): EnergyPhase {
   if (energy <= 25) return 'critical';
   if (energy <= 50) return 'warning';
