@@ -1,0 +1,44 @@
+name: Bug report
+description: 报告可复现的游戏问题
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢报告问题。请先确认问题在最新 `main` 分支仍然存在。
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 请按顺序写出触发问题所需的操作和按键。
+      placeholder: |
+        1. 启动游戏
+        2. 按住上键 3 秒
+        3. 按 X
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期行为
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: 浏览器和系统
+      placeholder: Chrome 128 / macOS 15
+    validations:
+      required: true
+  - type: textarea
+    id: console
+    attributes:
+      label: 控制台信息
+      description: 如果有，请粘贴浏览器控制台错误；不要粘贴任何令牌或个人数据。
