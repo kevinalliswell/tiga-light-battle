@@ -92,6 +92,10 @@ export function canUseAbility(form: TigaForm, ability: Ability): boolean {
   return FORM_ABILITIES[form].includes(ability);
 }
 
+export function requiresCloseRange(ability: Ability): boolean {
+  return ability === 'punch';
+}
+
 export function canTransform(form: TigaForm, lightMeter: number): boolean {
   return form !== 'shining' || lightMeter >= 100;
 }

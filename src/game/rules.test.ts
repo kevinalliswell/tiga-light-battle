@@ -8,6 +8,7 @@ import {
   hasInfiniteEnergy,
   hasInfiniteHealth,
   normalizeEnergy,
+  requiresCloseRange,
   resolveDamage,
   resolveDemogeaFinisher,
   resolveRevival,
@@ -37,6 +38,11 @@ describe('Tiga forms', () => {
 });
 
 describe('form abilities', () => {
+  it('keeps punches close range while allowing flying kicks to travel', () => {
+    expect(requiresCloseRange('punch')).toBe(true);
+    expect(requiresCloseRange('kick')).toBe(false);
+  });
+
   it.each([
     ['power', 'delacium'],
     ['multi', 'zeperion'],

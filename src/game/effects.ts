@@ -97,6 +97,54 @@ export class Effects {
     this.impact(end, 0xcffaff, 0.9);
   }
 
+  flyingKick(start: THREE.Vector3, end: THREE.Vector3) {
+    const group = new THREE.Group();
+    const direction = new THREE.Vector3().subVectors(end, start).normalize();
+    const kickStart = start.clone().add(new THREE.Vector3(0.5, -1.25, 0));
+    const core = new THREE.Mesh(
+      new THREE.CapsuleGeometry(0.24, 0.85, 8, 14),
+      new THREE.MeshBasicMaterial({ color: 0xfff4c2, transparent: true, opacity: 0.98 }),
+    );
+    core.rotation.z = Math.PI / 2;
+    core.position.copy(kickStart);
+    group.add(core);
+
+    const glow = new THREE.Mesh(
+      new THREE.SphereGeometry(0.48, 12, 8),
+      new THREE.MeshBasicMaterial({ color: 0xffb84f, transparent: true, opacity: 0.32, depthWrite: false }),
+    );
+    glow.position.copy(kickStart);
+    group.add(glow);
+
+    const trail = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.08, 0.34, 2.8, 10),
+      new THREE.MeshBasicMaterial({ color: 0xffd36d, transparent: true, opacity: 0.42, depthWrite: false }),
+    );
+    alignCylinder(trail, kickStart.clone().addScaledVector(direction, -1.4), kickStart);
+    group.add(trail);
+    this.scene.add(group);
+    this.effects.push({
+      object: group,
+      age: 0,
+      duration: 0.58,
+      update: (progress) => {
+        const eased = 1 - (1 - progress) ** 3;
+        const position = new THREE.Vector3().lerpVectors(kickStart, end, eased);
+        position.y += Math.sin(progress * Math.PI) * 1.4;
+        core.position.copy(position);
+        glow.position.copy(position);
+        trail.position.copy(position).addScaledVector(direction, -0.9);
+        trail.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+        core.scale.setScalar(1 + Math.sin(progress * Math.PI) * 0.28);
+        glow.scale.setScalar(1 + Math.sin(progress * Math.PI) * 0.9);
+        (core.material as THREE.MeshBasicMaterial).opacity = 1 - progress * 0.35;
+        (glow.material as THREE.MeshBasicMaterial).opacity = 0.32 * (1 - progress);
+        (trail.material as THREE.MeshBasicMaterial).opacity = 0.42 * (1 - progress);
+      },
+    });
+    this.impact(end, 0xffd36d, 1.5);
+  }
+
   lightning(start: THREE.Vector3, end: THREE.Vector3) {
     const group = new THREE.Group();
     for (let branch = 0; branch < 5; branch += 1) {

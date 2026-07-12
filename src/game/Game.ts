@@ -27,6 +27,7 @@ import {
   hasInfiniteEnergy,
   hasInfiniteHealth,
   normalizeEnergy,
+  requiresCloseRange,
   resolveDamage,
   resolveDemogeaFinisher,
   resolveRevival,
@@ -367,7 +368,7 @@ export class TigaGame {
     if (targets.length === 0) return;
     const nearest = targets[0];
     const distance = Math.abs(nearest.object.position.x - this.tiga.position.x);
-    if ((ability === 'punch' || ability === 'kick') && distance > 4.7) {
+    if (requiresCloseRange(ability) && distance > 4.7) {
       this.setMessage('距离太远', 0.8);
       return;
     }
@@ -451,8 +452,12 @@ export class TigaGame {
   }
 
   private playAbilityEffect(ability: Ability, start: THREE.Vector3, end: THREE.Vector3) {
-    if (ability === 'punch' || ability === 'kick') {
+    if (ability === 'punch') {
       this.effects.impact(end, ability === 'punch' ? 0x9cefff : 0xffd36d, 1.15);
+      return;
+    }
+    if (ability === 'kick') {
+      this.effects.flyingKick(start, end);
       return;
     }
     if (ability === 'boomerang') {
