@@ -131,6 +131,22 @@ button:focus-visible {
   background: var(--gold);
 }
 
+.meter--energy.energy-warning span,
+.meter--energy.energy-critical span {
+  background: var(--red);
+  animation: energy-blink 0.72s steps(2, end) infinite;
+}
+
+.meter--energy.energy-critical span {
+  box-shadow: 0 0 0.6rem rgba(228, 73, 62, 0.8);
+}
+
+@keyframes energy-blink {
+  50% {
+    opacity: 0.34;
+  }
+}
+
 .meter--monster span {
   margin-left: auto;
   background: var(--red);
@@ -171,6 +187,43 @@ button:focus-visible {
   text-align: center;
   font-size: 0.82rem;
   font-weight: 750;
+}
+
+.energy-alert {
+  position: absolute;
+  top: 10.05rem;
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.65rem;
+  transform: translateX(-50%);
+  color: #2a110d;
+  background: #f4c95d;
+  border-radius: 3px;
+  box-shadow: 0 0.2rem 1.1rem rgba(0, 0, 0, 0.35);
+  font-size: 0.72rem;
+  font-weight: 800;
+  pointer-events: auto;
+}
+
+.energy-alert[hidden] {
+  display: none;
+}
+
+.energy-help-command {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  font-weight: inherit;
+}
+
+.energy-help-command:disabled {
+  opacity: 0.55;
 }
 
 .light-meter {
@@ -452,6 +505,13 @@ kbd {
   .announcement {
     top: 7.7rem;
     font-size: 0.68rem;
+  }
+
+  .energy-alert {
+    top: 9.2rem;
+    max-width: calc(100vw - 2rem);
+    font-size: 0.62rem;
+    white-space: nowrap;
   }
 
   .forms {

@@ -16,12 +16,16 @@ import {
 } from './models';
 import {
   FORM_STATS,
+  canUseFlashlight,
   canTransform,
   canUseAbility,
+  getEnergyPhase,
   resolveDamage,
   resolveRevival,
   type Ability,
   type DefeatReason,
+  type EnergyPhase,
+  type RevivalMethod,
   type TigaForm,
 } from './rules';
 
@@ -88,12 +92,16 @@ export class TigaGame {
   private form: TigaForm = 'multi';
   private health = 100;
   private energy = 100;
+  private energyPhase: EnergyPhase = 'stable';
+  private energyAlert = '能量状态稳定';
   private lightMeter = 0;
   private wave = 1;
   private message = '怪兽反应确认';
   private messageTimer = 0;
   private defeatReason: DefeatReason | null = null;
+  private revivalMethod: RevivalMethod | null = null;
   private reviving = false;
+  private recharging = false;
   private reviveTimer = 0;
   private attackCooldown = 0;
   private attackPoseTimer = 0;
@@ -259,7 +267,8 @@ export class TigaGame {
       return;
     }
     if (action === 'revive') {
-      this.beginRevival();
+      if (this.defeatReason) this.beginRevival();
+      else this.beginFlashlightRecharge();
       return;
     }
     if (action.startsWith('form-')) {
@@ -437,11 +446,18 @@ export class TigaGame {
       return;
     }
 
+    if (this.recharging) {
+      this.reviveTimer -= delta;
+      if (this.reviveTimer <= 0) this.finishFlashlightRecharge();
+      return;
+    }
+
     this.updatePlayer(delta);
     this.updateMonsters(delta);
     this.energy = Math.max(0, this.energy - delta * (this.form === 'shining' ? 0.9 : 0.24));
+    this.updateEnergyPhase();
     if (this.health <= 0) this.turnToStone('defeated');
-    else if (this.energy <= 0) this.turnToStone('exhausted');
+    else if (this.energy <= 0 && !this.isGatanothorBattle()) this.turnToStone('exhausted');
 
     if (this.spawnTimer > 0) {
       this.spawnTimer -= delta;
@@ -533,26 +549,55 @@ export class TigaGame {
     }
   }
 
+  private updateEnergyPhase() {
+    const nextPhase = getEnergyPhase(this.energy);
+    if (nextPhase === this.energyPhase) return;
+    this.energyPhase = nextPhase;
+    if (nextPhase === 'warning') {
+      this.energyAlert = '能量降到一半，计时器开始闪红';
+      this.setMessage('能量降到一半，计时器开始闪红', 2.2);
+    } else if (nextPhase === 'critical') {
+      if (this.isGatanothorBattle()) {
+        this.energyAlert = '加坦杰厄的黑暗会让手电筒失效';
+        this.setMessage('手电筒对加坦杰厄无效，坚持到生命值归零', 2.8);
+      } else {
+        this.energyAlert = '能量很低，按 O 让人们用手电筒补充';
+        this.setMessage('能量很低，按 O 使用手电筒补充', 2.8);
+      }
+    } else {
+      this.energyAlert = '能量状态稳定';
+    }
+  }
+
+  private isGatanothorBattle() {
+    return this.livingMonsters().some((monster) => monster.profile.id === 'gatanothor');
+  }
+
   private turnToStone(reason: DefeatReason) {
     if (this.defeatReason) return;
     this.defeatReason = reason;
+    this.revivalMethod = this.isGatanothorBattle() ? 'belief' : 'flashlight';
     this.health = reason === 'defeated' ? 0 : this.health;
     this.energy = 0;
+    this.energyPhase = 'critical';
     this.heldActions.clear();
     this.setStatueMaterial(true);
-    this.setMessage(reason === 'defeated' ? '迪迦被彻底击败了' : '能量耗尽，迪迦变成了石像', 999);
+    this.setMessage(
+      this.revivalMethod === 'belief' ? '加坦杰厄击碎了迪迦，石像等待孩子们的光' : '迪迦变成了石像',
+      999,
+    );
     this.tone(55, 0.7, 'sawtooth');
     this.updateHud();
   }
 
   private beginRevival() {
-    if (!this.defeatReason || this.reviving) return;
+    if (!this.defeatReason || this.reviving || !this.revivalMethod) return;
     this.reviving = true;
     this.reviveTimer = 2.4;
     const target = this.tiga.position.clone().add(new THREE.Vector3(0, 4.5, 0));
-    this.effects.revival(target, this.defeatReason === 'defeated');
+    this.effects.revival(target, this.revivalMethod === 'belief');
     this.setMessage(
-      this.defeatReason === 'defeated' ? '大家的光正在跨越黑暗' : '画面中的人们打开了手电筒',
+      this.revivalMethod === 'belief' ? '孩子们的信念之光正在跨越黑暗' : '画面中的人们打开了手电筒',
       2.4,
     );
     this.tone(320, 1.6, 'sine');
@@ -560,17 +605,44 @@ export class TigaGame {
   }
 
   private finishRevival() {
-    if (!this.defeatReason) return;
-    const revival = resolveRevival(this.defeatReason);
-    const wasDefeated = this.defeatReason === 'defeated';
+    if (!this.defeatReason || !this.revivalMethod) return;
+    const revival = resolveRevival(this.revivalMethod);
+    const usedBelief = this.revivalMethod === 'belief';
     this.setStatueMaterial(false);
     this.setForm(revival.form);
     this.health = revival.healthRatio * 100;
     this.energy = revival.energyRatio * 100;
+    this.energyPhase = 'stable';
+    this.energyAlert = '能量状态稳定';
     this.defeatReason = null;
+    this.revivalMethod = null;
     this.reviving = false;
-    this.setMessage(wasDefeated ? '大家的光让闪耀迪迦复活！' : '手电筒之光补充了迪迦的能量', 2.5);
+    this.setMessage(usedBelief ? '孩子们的信念之光让闪耀迪迦复活！' : '手电筒之光补充了迪迦的能量', 2.5);
     this.tone(720, 0.5, 'sine');
+  }
+
+  private beginFlashlightRecharge() {
+    if (this.energyPhase !== 'critical' || this.recharging) return;
+    if (!canUseFlashlight(this.isGatanothorBattle() ? 'gatanothor' : 'ordinary')) {
+      this.setMessage('加坦杰厄的黑暗让手电筒失效', 2.1);
+      this.tone(80, 0.18, 'square');
+      return;
+    }
+    this.recharging = true;
+    this.reviveTimer = 1.3;
+    const target = this.tiga.position.clone().add(new THREE.Vector3(0, 4.5, 0));
+    this.effects.revival(target, false);
+    this.setMessage('人们打开手电筒，为迪迦补充能量', 1.5);
+    this.tone(320, 1, 'sine');
+  }
+
+  private finishFlashlightRecharge() {
+    this.recharging = false;
+    this.energy = 65;
+    this.energyPhase = 'warning';
+    this.energyAlert = '能量已补充，继续战斗';
+    this.setMessage('手电筒之光补充完成，继续战斗！', 2.2);
+    this.tone(520, 0.35, 'sine');
   }
 
   private setStatueMaterial(stone: boolean) {
@@ -632,6 +704,8 @@ export class TigaGame {
       form: this.form,
       playerHealth: this.health,
       playerEnergy: this.energy,
+      energyPhase: this.energyPhase,
+      energyAlert: this.energyAlert,
       lightMeter: this.lightMeter,
       monsterName: this.currentMonsterName(),
       monsterHealth,
@@ -640,7 +714,9 @@ export class TigaGame {
       wave: this.wave,
       message: this.messageTimer > 0 ? this.message : '',
       defeatReason: this.defeatReason,
+      revivalMethod: this.revivalMethod,
       reviving: this.reviving,
+      recharging: this.recharging,
     };
     this.hud.render(snapshot);
   }

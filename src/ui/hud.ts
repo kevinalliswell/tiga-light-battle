@@ -12,7 +12,15 @@ import {
   Swords,
   createIcons,
 } from 'lucide';
-import { FORM_STATS, canUseAbility, type Ability, type DefeatReason, type TigaForm } from '../game/rules';
+import {
+  FORM_STATS,
+  canUseAbility,
+  type Ability,
+  type DefeatReason,
+  type EnergyPhase,
+  type RevivalMethod,
+  type TigaForm,
+} from '../game/rules';
 
 export type GameAction =
   | Ability
@@ -28,6 +36,8 @@ export interface HudSnapshot {
   form: TigaForm;
   playerHealth: number;
   playerEnergy: number;
+  energyPhase: EnergyPhase;
+  energyAlert: string;
   lightMeter: number;
   monsterName: string;
   monsterHealth: number;
@@ -36,7 +46,9 @@ export interface HudSnapshot {
   wave: number;
   message: string;
   defeatReason: DefeatReason | null;
+  revivalMethod: RevivalMethod | null;
   reviving: boolean;
+  recharging: boolean;
 }
 
 const ABILITY_KEYS: Array<{ key: string; action: Ability; label: string; icon: string }> = [
@@ -87,6 +99,12 @@ export class Hud {
 
         <div class="announcement" role="status" aria-live="polite" data-hud="message"></div>
 
+        <div class="energy-alert" data-hud="energy-alert" role="status" aria-live="polite" hidden>
+          <button class="energy-help-command" type="button" data-action="revive">
+            <kbd>O</kbd><span data-hud="energy-alert-text">能量很低，使用手电筒补充</span>
+          </button>
+        </div>
+
         <div class="light-meter" aria-label="闪耀光能">
           <i data-lucide="sparkles" aria-hidden="true"></i>
           <div class="light-track"><span data-hud="light-meter"></span></div>
@@ -135,7 +153,7 @@ export class Hud {
           <p class="revive-kicker" data-hud="revive-kicker">能量耗尽</p>
           <h2 data-hud="revive-title">迪迦变成了石像</h2>
           <button class="light-command" type="button" data-action="revive">
-            <kbd>O</kbd><i data-lucide="sparkles" aria-hidden="true"></i><span>汇聚手电筒之光</span>
+            <kbd>O</kbd><i data-lucide="sparkles" aria-hidden="true"></i><span data-hud="revive-action">汇聚手电筒之光</span>
           </button>
         </div>
 
@@ -174,6 +192,10 @@ export class Hud {
   render(snapshot: HudSnapshot) {
     this.setWidth('player-health', snapshot.playerHealth);
     this.setWidth('player-energy', snapshot.playerEnergy);
+    const energyMeter = this.query<HTMLElement>('player-energy').closest('.meter');
+    energyMeter?.classList.toggle('energy-warning', snapshot.energyPhase === 'warning');
+    energyMeter?.classList.toggle('energy-critical', snapshot.energyPhase === 'critical');
+    this.setText('energy-alert-text', snapshot.energyAlert);
     this.setWidth('light-meter', snapshot.lightMeter);
     this.setText('player-health-text', Math.ceil(snapshot.playerHealth));
     this.setText('player-energy-text', Math.ceil(snapshot.playerEnergy));
@@ -190,13 +212,25 @@ export class Hud {
     );
 
     this.query<HTMLElement>('start-screen').hidden = snapshot.started;
+    const energyAlert = this.query<HTMLElement>('energy-alert');
+    energyAlert.hidden =
+      !snapshot.started || snapshot.defeatReason !== null || snapshot.energyPhase !== 'critical';
+    const energyHelp = energyAlert.querySelector<HTMLButtonElement>('[data-action="revive"]');
+    if (energyHelp) {
+      energyHelp.disabled =
+        !snapshot.started || snapshot.defeatReason !== null || snapshot.recharging;
+    }
     const reviveScreen = this.query<HTMLElement>('revive-screen');
     reviveScreen.hidden = snapshot.defeatReason === null;
     if (snapshot.defeatReason) {
-      this.setText('revive-kicker', snapshot.defeatReason === 'defeated' ? '彻底战败' : '能量耗尽');
+      this.setText('revive-kicker', snapshot.revivalMethod === 'belief' ? '孩子们的信念之光' : '能量耗尽');
       this.setText(
         'revive-title',
-        snapshot.defeatReason === 'defeated' ? '让大家的光唤醒迪迦' : '迪迦变成了石像',
+        snapshot.revivalMethod === 'belief' ? '让孩子们的光唤醒迪迦' : '迪迦变成了石像',
+      );
+      this.setText(
+        'revive-action',
+        snapshot.revivalMethod === 'belief' ? '汇聚孩子们的信念之光' : '汇聚手电筒之光',
       );
       const reviveButton = reviveScreen.querySelector<HTMLButtonElement>('[data-action="revive"]');
       if (reviveButton) reviveButton.disabled = snapshot.reviving;
@@ -211,7 +245,10 @@ export class Hud {
     this.host.querySelectorAll<HTMLButtonElement>('.action-button').forEach((button) => {
       const ability = button.dataset.action as Ability;
       button.disabled =
-        !snapshot.started || !canUseAbility(snapshot.form, ability) || snapshot.defeatReason !== null;
+        !snapshot.started ||
+        !canUseAbility(snapshot.form, ability) ||
+        snapshot.defeatReason !== null ||
+        snapshot.recharging;
     });
     const restartButton = this.host.querySelector<HTMLButtonElement>('[data-command="restart"]');
     if (restartButton) restartButton.hidden = !snapshot.started;
