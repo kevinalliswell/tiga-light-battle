@@ -22,6 +22,7 @@ import {
   FORM_STATS,
   canEnterFlight,
   canEnterFlightFromTaps,
+  FLIGHT_TAP_WINDOW_SECONDS,
   canUseFlashlight,
   canTransform,
   canUseAbility,
@@ -312,7 +313,7 @@ export class TigaGame {
           this.jumpHoldTimer = 0;
           if (this.flightTapWindow <= 0) this.flightTapCount = 0;
           this.flightTapCount += 1;
-          this.flightTapWindow = 1.25;
+          this.flightTapWindow = FLIGHT_TAP_WINDOW_SECONDS;
           if (canEnterFlightFromTaps(this.flightTapCount)) this.enterFlightMode();
         }
       }

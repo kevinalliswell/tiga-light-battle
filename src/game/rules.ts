@@ -103,6 +103,7 @@ export function canEnterFlight(holdSeconds: number): boolean {
 }
 
 export const FLIGHT_TAP_COUNT = 3;
+export const FLIGHT_TAP_WINDOW_SECONDS = 2;
 
 export function canEnterFlightFromTaps(pressCount: number): boolean {
   return pressCount >= FLIGHT_TAP_COUNT;
