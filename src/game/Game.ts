@@ -410,7 +410,6 @@ export class TigaGame {
       }
       if (ability === 'punch' || ability === 'kick') this.completeTutorialAction('attack');
       if (ability === 'delacium') this.completeTutorialAction('light');
-      this.tone(ability === 'super-lightning' ? 760 : 150 + damage * 5, 0.12, 'sawtooth');
       this.audio?.play('monster-hit');
       if (target.health <= 0) this.defeatMonster(target);
     });
@@ -643,7 +642,6 @@ export class TigaGame {
         } else {
           this.setMessage(guarding ? '防御成功，伤害降低' : `${monster.profile.name}发动攻击`, 0.85);
         }
-        this.tone(78, 0.15, 'sawtooth');
       }
       monster.object.position.x = THREE.MathUtils.clamp(monster.object.position.x, -15, 20);
     }

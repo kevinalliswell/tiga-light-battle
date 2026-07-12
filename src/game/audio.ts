@@ -50,20 +50,20 @@ export class BattleAudio {
     }
     this.context = new AudioContext();
     this.masterGain = this.context.createGain();
-    this.masterGain.gain.value = 0.72;
+    this.masterGain.gain.value = 0.68;
     this.masterGain.connect(this.context.destination);
 
     this.musicGain = this.context.createGain();
-    this.musicGain.gain.value = 0.3;
+    this.musicGain.gain.value = 0.24;
     this.musicFilter = this.context.createBiquadFilter();
     this.musicFilter.type = 'lowpass';
     this.musicFilter.frequency.value = 2800;
     this.musicGain.connect(this.musicFilter).connect(this.masterGain);
     this.sfxGain = this.context.createGain();
-    this.sfxGain.gain.value = 0.64;
+    this.sfxGain.gain.value = 0.74;
     this.sfxFilter = this.context.createBiquadFilter();
     this.sfxFilter.type = 'lowpass';
-    this.sfxFilter.frequency.value = 5200;
+    this.sfxFilter.frequency.value = 8200;
     this.sfxGain.connect(this.sfxFilter).connect(this.masterGain);
 
     this.scheduleThemeStep();
@@ -87,36 +87,45 @@ export class BattleAudio {
     if (!this.context || !this.sfxGain) return;
     switch (cue) {
       case 'punch':
-        this.sweep(180, 78, 0.13, 'sine', 0.052);
-        this.noise(0.055, 0.022, 720);
+        this.sweep(170, 58, 0.15, 'sine', 0.078);
+        this.sweep(520, 180, 0.1, 'triangle', 0.04, 0.01);
+        this.noise(0.05, 0.034, 2500, 'bandpass');
         break;
       case 'kick':
-        this.sweep(125, 48, 0.22, 'sine', 0.062);
-        this.noise(0.09, 0.028, 560);
+        this.sweep(240, 52, 0.22, 'sine', 0.095);
+        this.sweep(760, 160, 0.28, 'triangle', 0.052, 0.015);
+        this.noise(0.16, 0.044, 4300, 'bandpass');
+        this.sweep(92, 44, 0.26, 'sine', 0.072, 0.025);
         break;
       case 'boomerang':
-        this.sweep(460, 980, 0.34, 'sine', 0.045);
-        this.sweep(720, 1240, 0.25, 'triangle', 0.018, 0.04);
+        this.sweep(360, 980, 0.34, 'sine', 0.05);
+        this.sweep(720, 1480, 0.25, 'triangle', 0.028, 0.04);
+        this.noise(0.16, 0.016, 3800, 'highpass');
         break;
       case 'delacium':
-        this.sweep(105, 290, 0.42, 'triangle', 0.055);
-        this.sweep(210, 120, 0.28, 'sine', 0.024, 0.05);
+        this.sweep(86, 260, 0.4, 'triangle', 0.068);
+        this.sweep(170, 92, 0.26, 'sine', 0.032, 0.06);
+        this.noise(0.18, 0.026, 1800, 'lowpass');
         break;
       case 'zeperion':
-        this.sweep(270, 860, 0.44, 'sine', 0.058);
-        this.sweep(540, 1280, 0.32, 'triangle', 0.025, 0.05);
+        this.sweep(230, 940, 0.46, 'sine', 0.074);
+        this.sweep(520, 1460, 0.34, 'triangle', 0.032, 0.05);
+        this.noise(0.11, 0.018, 5200, 'highpass');
         break;
       case 'runboldt':
-        this.sweep(380, 1120, 0.36, 'triangle', 0.054);
-        this.sweep(760, 1480, 0.24, 'sine', 0.018, 0.05);
+        this.sweep(330, 1240, 0.38, 'triangle', 0.07);
+        this.sweep(740, 1680, 0.26, 'sine', 0.024, 0.05);
+        this.noise(0.12, 0.022, 4400, 'bandpass');
         break;
       case 'evolution-ray':
-        this.sweep(440, 880, 0.48, 'sine', 0.06);
-        this.sweep(660, 1320, 0.4, 'triangle', 0.028, 0.06);
+        this.sweep(360, 920, 0.5, 'sine', 0.078);
+        this.sweep(660, 1560, 0.44, 'triangle', 0.04, 0.06);
+        this.noise(0.14, 0.018, 5600, 'highpass');
         break;
       case 'super-lightning':
-        this.sweep(160, 940, 0.38, 'triangle', 0.064);
-        this.noise(0.18, 0.028, 1800);
+        this.sweep(120, 1020, 0.4, 'triangle', 0.082);
+        this.sweep(620, 1880, 0.3, 'sine', 0.032, 0.08);
+        this.noise(0.22, 0.04, 2400, 'bandpass');
         break;
       case 'start':
         this.sweep(220, 440, 0.3, 'sine', 0.032);
@@ -131,20 +140,23 @@ export class BattleAudio {
         this.sweep(660, 460, 0.16, 'triangle', 0.018, 0.02);
         break;
       case 'monster-hit':
-        this.noise(0.07, 0.024, 360);
-        this.sweep(130, 72, 0.14, 'sine', 0.03);
+        this.noise(0.08, 0.04, 520, 'lowpass');
+        this.sweep(148, 62, 0.18, 'sine', 0.06);
+        this.sweep(860, 220, 0.08, 'triangle', 0.026, 0.015);
         break;
       case 'monster-attack':
-        this.sweep(105, 48, 0.24, 'triangle', 0.05);
-        this.noise(0.12, 0.026, 280);
+        this.sweep(120, 46, 0.28, 'triangle', 0.07);
+        this.sweep(270, 88, 0.24, 'sine', 0.035, 0.04);
+        this.noise(0.14, 0.036, 420, 'lowpass');
         break;
       case 'defeat':
         this.sweep(360, 128, 0.44, 'sine', 0.05);
         break;
       case 'explosion':
-        this.noise(0.46, 0.07, 160);
-        this.sweep(170, 38, 0.56, 'sine', 0.075);
-        this.sweep(340, 80, 0.36, 'triangle', 0.026, 0.02);
+        this.noise(0.5, 0.1, 180, 'lowpass');
+        this.sweep(180, 36, 0.62, 'sine', 0.1);
+        this.sweep(340, 76, 0.4, 'triangle', 0.04, 0.02);
+        this.noise(0.22, 0.026, 2600, 'highpass');
         break;
       case 'revive':
       case 'flashlight':
@@ -155,9 +167,10 @@ export class BattleAudio {
         this.sweep(180, 42, 0.8, 'triangle', 0.05);
         break;
       case 'demogea-burst':
-        this.sweep(120, 1320, 0.62, 'triangle', 0.075);
-        this.noise(0.42, 0.075, 1800);
-        this.sweep(660, 1320, 0.42, 'sine', 0.045, 0.08);
+        this.sweep(100, 1420, 0.68, 'triangle', 0.1);
+        this.noise(0.46, 0.1, 1900, 'bandpass');
+        this.sweep(620, 1460, 0.46, 'sine', 0.06, 0.08);
+        this.sweep(72, 30, 0.8, 'sine', 0.06, 0.18);
         break;
     }
   }
@@ -204,7 +217,12 @@ export class BattleAudio {
     oscillator.stop(startAt + duration + 0.03);
   }
 
-  private noise(duration: number, gainValue: number, filterFrequency: number) {
+  private noise(
+    duration: number,
+    gainValue: number,
+    filterFrequency: number,
+    filterType: BiquadFilterType = 'lowpass',
+  ) {
     if (!this.context || !this.sfxGain) return;
     const frameCount = Math.max(1, Math.floor(this.context.sampleRate * duration));
     const buffer = this.context.createBuffer(1, frameCount, this.context.sampleRate);
@@ -217,7 +235,7 @@ export class BattleAudio {
     const envelope = this.context.createGain();
     const now = this.context.currentTime;
     source.buffer = buffer;
-    filter.type = 'lowpass';
+    filter.type = filterType;
     filter.frequency.setValueAtTime(filterFrequency, now);
     envelope.gain.setValueAtTime(gainValue, now);
     envelope.gain.exponentialRampToValueAtTime(0.0001, now + duration);
