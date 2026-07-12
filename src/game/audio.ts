@@ -5,10 +5,14 @@ export const HERO_THEME = [
   261.63,
   329.63,
   392,
+  440,
+  392,
   329.63,
   261.63,
   293.66,
   349.23,
+  440,
+  523.25,
   440,
   349.23,
   293.66,
@@ -34,6 +38,8 @@ export class BattleAudio {
   private masterGain: GainNode | null = null;
   private musicGain: GainNode | null = null;
   private sfxGain: GainNode | null = null;
+  private musicFilter: BiquadFilterNode | null = null;
+  private sfxFilter: BiquadFilterNode | null = null;
   private musicTimer: number | null = null;
   private musicStep = 0;
 
@@ -44,18 +50,24 @@ export class BattleAudio {
     }
     this.context = new AudioContext();
     this.masterGain = this.context.createGain();
-    this.masterGain.gain.value = 0.68;
+    this.masterGain.gain.value = 0.72;
     this.masterGain.connect(this.context.destination);
 
     this.musicGain = this.context.createGain();
-    this.musicGain.gain.value = 0.24;
-    this.musicGain.connect(this.masterGain);
+    this.musicGain.gain.value = 0.3;
+    this.musicFilter = this.context.createBiquadFilter();
+    this.musicFilter.type = 'lowpass';
+    this.musicFilter.frequency.value = 2800;
+    this.musicGain.connect(this.musicFilter).connect(this.masterGain);
     this.sfxGain = this.context.createGain();
-    this.sfxGain.gain.value = 0.72;
-    this.sfxGain.connect(this.masterGain);
+    this.sfxGain.gain.value = 0.64;
+    this.sfxFilter = this.context.createBiquadFilter();
+    this.sfxFilter.type = 'lowpass';
+    this.sfxFilter.frequency.value = 5200;
+    this.sfxGain.connect(this.sfxFilter).connect(this.masterGain);
 
     this.scheduleThemeStep();
-    this.musicTimer = window.setInterval(() => this.scheduleThemeStep(), 360);
+    this.musicTimer = window.setInterval(() => this.scheduleThemeStep(), 420);
     void this.context.resume();
   }
 
@@ -64,85 +76,88 @@ export class BattleAudio {
     duration: number,
     type: OscillatorType,
     delay = 0,
-    gain = 0.045,
+    gain = 0.02,
   ) {
     if (!this.context || !this.sfxGain) return;
-    this.sweep(frequency, frequency, duration, type, gain, delay, this.sfxGain);
+    const softenedType = type === 'square' || type === 'sawtooth' ? 'triangle' : type;
+    this.sweep(frequency, frequency, duration, softenedType, gain, delay, this.sfxGain);
   }
 
   play(cue: AudioCue) {
     if (!this.context || !this.sfxGain) return;
     switch (cue) {
       case 'punch':
-        this.sweep(180, 72, 0.13, 'square', 0.08);
-        this.noise(0.07, 0.045, 900);
+        this.sweep(180, 78, 0.13, 'sine', 0.052);
+        this.noise(0.055, 0.022, 720);
         break;
       case 'kick':
-        this.sweep(130, 48, 0.18, 'sawtooth', 0.09);
-        this.noise(0.1, 0.055, 720);
+        this.sweep(125, 48, 0.22, 'sine', 0.062);
+        this.noise(0.09, 0.028, 560);
         break;
       case 'boomerang':
-        this.sweep(480, 1120, 0.3, 'triangle', 0.06);
+        this.sweep(460, 980, 0.34, 'sine', 0.045);
+        this.sweep(720, 1240, 0.25, 'triangle', 0.018, 0.04);
         break;
       case 'delacium':
-        this.sweep(92, 240, 0.38, 'sawtooth', 0.075);
-        this.noise(0.16, 0.035, 420);
+        this.sweep(105, 290, 0.42, 'triangle', 0.055);
+        this.sweep(210, 120, 0.28, 'sine', 0.024, 0.05);
         break;
       case 'zeperion':
-        this.sweep(260, 920, 0.42, 'sine', 0.07);
-        this.sweep(520, 1040, 0.3, 'triangle', 0.035, 0.04);
+        this.sweep(270, 860, 0.44, 'sine', 0.058);
+        this.sweep(540, 1280, 0.32, 'triangle', 0.025, 0.05);
         break;
       case 'runboldt':
-        this.sweep(420, 1320, 0.3, 'triangle', 0.062);
-        this.noise(0.12, 0.025, 1800);
+        this.sweep(380, 1120, 0.36, 'triangle', 0.054);
+        this.sweep(760, 1480, 0.24, 'sine', 0.018, 0.05);
         break;
       case 'evolution-ray':
-        this.sweep(440, 880, 0.45, 'sine', 0.065);
-        this.sweep(660, 1320, 0.38, 'triangle', 0.035, 0.06);
+        this.sweep(440, 880, 0.48, 'sine', 0.06);
+        this.sweep(660, 1320, 0.4, 'triangle', 0.028, 0.06);
         break;
       case 'super-lightning':
-        this.sweep(150, 1080, 0.32, 'sawtooth', 0.075);
-        this.noise(0.24, 0.06, 2600);
+        this.sweep(160, 940, 0.38, 'triangle', 0.064);
+        this.noise(0.18, 0.028, 1800);
         break;
       case 'start':
-        this.sweep(220, 440, 0.24, 'triangle', 0.045);
-        this.sweep(330, 660, 0.28, 'sine', 0.035, 0.12);
+        this.sweep(220, 440, 0.3, 'sine', 0.032);
+        this.sweep(330, 660, 0.34, 'triangle', 0.026, 0.13);
         break;
       case 'transform':
-        this.sweep(260, 1040, 0.58, 'sine', 0.08);
-        this.sweep(390, 1560, 0.44, 'triangle', 0.04, 0.14);
+        this.sweep(260, 1040, 0.64, 'sine', 0.065);
+        this.sweep(390, 1560, 0.5, 'triangle', 0.03, 0.15);
         break;
       case 'shield':
-        this.sweep(260, 74, 0.2, 'square', 0.055);
-        this.noise(0.12, 0.04, 520);
+        this.sweep(330, 190, 0.24, 'sine', 0.052);
+        this.sweep(660, 460, 0.16, 'triangle', 0.018, 0.02);
         break;
       case 'monster-hit':
-        this.noise(0.08, 0.04, 380);
-        this.sweep(110, 65, 0.12, 'sawtooth', 0.04);
+        this.noise(0.07, 0.024, 360);
+        this.sweep(130, 72, 0.14, 'sine', 0.03);
         break;
       case 'monster-attack':
-        this.sweep(100, 42, 0.2, 'sawtooth', 0.065);
-        this.noise(0.14, 0.045, 300);
+        this.sweep(105, 48, 0.24, 'triangle', 0.05);
+        this.noise(0.12, 0.026, 280);
         break;
       case 'defeat':
-        this.sweep(360, 120, 0.38, 'triangle', 0.06);
+        this.sweep(360, 128, 0.44, 'sine', 0.05);
         break;
       case 'explosion':
-        this.noise(0.42, 0.1, 170);
-        this.sweep(190, 38, 0.52, 'sawtooth', 0.095);
+        this.noise(0.46, 0.07, 160);
+        this.sweep(170, 38, 0.56, 'sine', 0.075);
+        this.sweep(340, 80, 0.36, 'triangle', 0.026, 0.02);
         break;
       case 'revive':
       case 'flashlight':
-        this.sweep(260, 520, 0.62, 'sine', 0.06);
-        this.sweep(390, 780, 0.58, 'triangle', 0.035, 0.16);
+        this.sweep(260, 520, 0.7, 'sine', 0.052);
+        this.sweep(390, 780, 0.62, 'triangle', 0.026, 0.16);
         break;
       case 'stone':
-        this.sweep(180, 42, 0.72, 'sawtooth', 0.06);
+        this.sweep(180, 42, 0.8, 'triangle', 0.05);
         break;
       case 'demogea-burst':
-        this.sweep(120, 1480, 0.56, 'sawtooth', 0.09);
-        this.noise(0.48, 0.12, 2200);
-        this.sweep(740, 1480, 0.38, 'sine', 0.06, 0.08);
+        this.sweep(120, 1320, 0.62, 'triangle', 0.075);
+        this.noise(0.42, 0.075, 1800);
+        this.sweep(660, 1320, 0.42, 'sine', 0.045, 0.08);
         break;
     }
   }
@@ -150,9 +165,12 @@ export class BattleAudio {
   private scheduleThemeStep() {
     if (!this.context || !this.musicGain) return;
     const note = HERO_THEME[this.musicStep % HERO_THEME.length];
-    this.sweep(note, note * 1.01, 0.28, 'triangle', 0.045, 0, this.musicGain);
+    this.sweep(note, note * 1.01, 0.34, 'triangle', 0.052, 0, this.musicGain);
     if (this.musicStep % 4 === 0) {
-      this.sweep(note / 2, note / 2, 0.34, 'sine', 0.035, 0, this.musicGain);
+      this.sweep(note / 2, note / 2, 0.4, 'sine', 0.042, 0, this.musicGain);
+    }
+    if (this.musicStep % 8 === 4) {
+      this.sweep(note * 1.5, note * 1.5, 0.36, 'sine', 0.018, 0, this.musicGain);
     }
     this.musicStep += 1;
   }
