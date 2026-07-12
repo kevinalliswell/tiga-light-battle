@@ -102,6 +102,35 @@ export function canEnterFlight(holdSeconds: number): boolean {
   return holdSeconds >= FLIGHT_HOLD_SECONDS;
 }
 
+export const FLIGHT_TAP_COUNT = 3;
+export const FLIGHT_TAP_WINDOW_SECONDS = 2;
+
+export function canEnterFlightFromTaps(pressCount: number): boolean {
+  return pressCount >= FLIGHT_TAP_COUNT;
+}
+
+export const EARTH_VIEW_HOLD_SECONDS = 10;
+
+export function canEnterEarthView(holdSeconds: number): boolean {
+  return holdSeconds >= EARTH_VIEW_HOLD_SECONDS;
+}
+
+export type PerspectiveKey = 'k' | 'n';
+export const PERSPECTIVE_SWITCH_WINDOW_SECONDS = 10;
+
+export function canTogglePerspective(
+  firstKey: PerspectiveKey | null,
+  nextKey: PerspectiveKey,
+  elapsedSeconds: number,
+): boolean {
+  return (
+    firstKey !== null &&
+    firstKey !== nextKey &&
+    elapsedSeconds >= 0 &&
+    elapsedSeconds <= PERSPECTIVE_SWITCH_WINDOW_SECONDS
+  );
+}
+
 export function canTransform(
   form: TigaForm,
   lightMeter: number,

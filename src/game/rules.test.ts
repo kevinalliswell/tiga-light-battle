@@ -3,12 +3,17 @@ import {
   FORM_STATS,
   canTransform,
   canEnterFlight,
+  canEnterFlightFromTaps,
+  canEnterEarthView,
+  canTogglePerspective,
   canUseAbility,
   canUseFlashlight,
   getEnergyPhase,
   hasInfiniteEnergy,
   hasInfiniteHealth,
   normalizeEnergy,
+  PERSPECTIVE_SWITCH_WINDOW_SECONDS,
+  EARTH_VIEW_HOLD_SECONDS,
   requiresCloseRange,
   resolveDamage,
   resolveDemogeaFinisher,
@@ -42,6 +47,17 @@ describe('form abilities', () => {
   it('requires holding the jump key for three seconds to enter flight', () => {
     expect(canEnterFlight(2.99)).toBe(false);
     expect(canEnterFlight(3)).toBe(true);
+  });
+
+  it('enters flight after three consecutive up presses', () => {
+    expect(canEnterFlightFromTaps(2)).toBe(false);
+    expect(canEnterFlightFromTaps(3)).toBe(true);
+    expect(canEnterFlightFromTaps(5)).toBe(true);
+  });
+
+  it('opens the earth view after holding up for ten seconds in flight', () => {
+    expect(canEnterEarthView(EARTH_VIEW_HOLD_SECONDS - 0.01)).toBe(false);
+    expect(canEnterEarthView(EARTH_VIEW_HOLD_SECONDS)).toBe(true);
   });
 
   it('keeps punches close range while allowing flying kicks to travel', () => {
@@ -86,6 +102,19 @@ describe('form abilities', () => {
   it('gives shining form a health reserve that never drops', () => {
     expect(hasInfiniteHealth('shining')).toBe(true);
     expect(hasInfiniteHealth('sky')).toBe(false);
+  });
+});
+
+describe('perspective switching', () => {
+  it('accepts K and N in either order within ten seconds', () => {
+    expect(canTogglePerspective('k', 'n', PERSPECTIVE_SWITCH_WINDOW_SECONDS)).toBe(true);
+    expect(canTogglePerspective('n', 'k', PERSPECTIVE_SWITCH_WINDOW_SECONDS - 0.01)).toBe(true);
+  });
+
+  it('rejects repeated keys and expired perspective combinations', () => {
+    expect(canTogglePerspective('k', 'k', 1)).toBe(false);
+    expect(canTogglePerspective('n', 'n', 1)).toBe(false);
+    expect(canTogglePerspective('k', 'n', PERSPECTIVE_SWITCH_WINDOW_SECONDS + 0.01)).toBe(false);
   });
 });
 
