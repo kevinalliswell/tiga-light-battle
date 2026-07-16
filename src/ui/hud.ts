@@ -10,6 +10,8 @@ import {
   Shield,
   Sparkles,
   Swords,
+  Volume2,
+  VolumeX,
   createIcons,
 } from 'lucide';
 import {
@@ -74,6 +76,8 @@ export class Hud {
   private readonly host: HTMLElement;
   private actionHandler: ((action: GameAction, pressed: boolean) => void) | null = null;
   private startHandler: (() => void) | null = null;
+  private muteHandler: ((muted: boolean) => void) | null = null;
+  private muted = false;
 
   constructor(host: HTMLElement) {
     this.host = host;
@@ -175,6 +179,10 @@ export class Hud {
           </button>
         </div>
 
+        <button class="mute-command" type="button" data-command="mute" aria-pressed="false" aria-label="静音" hidden>
+          <i data-lucide="volume-2" aria-hidden="true"></i>
+        </button>
+
         <button class="restart-command" type="button" data-command="restart" aria-label="重新开始">
           <i data-lucide="rotate-ccw" aria-hidden="true"></i>
         </button>
@@ -193,6 +201,8 @@ export class Hud {
         Shield,
         Sparkles,
         Swords,
+        Volume2,
+        VolumeX,
       },
     });
     this.bindControls();
@@ -209,6 +219,10 @@ export class Hud {
 
   onTutorialSkip(handler: () => void) {
     this.host.querySelector<HTMLButtonElement>('[data-command="tutorial-skip"]')?.addEventListener('click', handler);
+  }
+
+  onToggleMute(handler: (muted: boolean) => void) {
+    this.muteHandler = handler;
   }
 
   render(snapshot: HudSnapshot) {
@@ -295,6 +309,8 @@ export class Hud {
     });
     const restartButton = this.host.querySelector<HTMLButtonElement>('[data-command="restart"]');
     if (restartButton) restartButton.hidden = !snapshot.started;
+    const muteButton = this.host.querySelector<HTMLButtonElement>('[data-command="mute"]');
+    if (muteButton) muteButton.hidden = !snapshot.started;
   }
 
   private bindControls() {
@@ -306,6 +322,11 @@ export class Hud {
     });
     this.host.querySelector<HTMLButtonElement>('[data-command="restart"]')?.addEventListener('click', () => {
       window.location.reload();
+    });
+    this.host.querySelector<HTMLButtonElement>('[data-command="mute"]')?.addEventListener('click', () => {
+      this.muted = !this.muted;
+      this.muteHandler?.(this.muted);
+      this.updateMuteButton();
     });
     this.host.querySelectorAll<HTMLButtonElement>('[data-action]').forEach((button) => {
       button.addEventListener('click', () => {
@@ -323,6 +344,15 @@ export class Hud {
       button.addEventListener('pointerup', release);
       button.addEventListener('pointercancel', release);
     });
+  }
+
+  private updateMuteButton() {
+    const button = this.host.querySelector<HTMLButtonElement>('[data-command="mute"]');
+    if (!button) return;
+    button.setAttribute('aria-pressed', String(this.muted));
+    button.setAttribute('aria-label', this.muted ? '取消静音' : '静音');
+    button.innerHTML = `<i data-lucide="${this.muted ? 'volume-x' : 'volume-2'}" aria-hidden="true"></i>`;
+    createIcons({ icons: { Volume2, VolumeX } });
   }
 
   private setText(name: string, value: string | number) {

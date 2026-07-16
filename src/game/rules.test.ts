@@ -165,6 +165,34 @@ describe('Gatanothor final battle', () => {
   });
 });
 
+describe('ordinary monster damage', () => {
+  it('computes basic attack damage from base damage and form strength', () => {
+    expect(resolveDamage('multi', 'punch', 'ordinary')).toBe(10);
+    expect(resolveDamage('multi', 'kick', 'ordinary')).toBe(14);
+    expect(resolveDamage('multi', 'boomerang', 'ordinary')).toBe(8);
+  });
+
+  it('scales basic attack damage up for the stronger power form', () => {
+    expect(resolveDamage('power', 'punch', 'ordinary')).toBeGreaterThan(
+      resolveDamage('multi', 'punch', 'ordinary'),
+    );
+  });
+
+  it('deals no damage when the current form cannot use the ability', () => {
+    expect(resolveDamage('multi', 'delacium', 'ordinary')).toBe(0);
+    expect(resolveDamage('power', 'zeperion', 'ordinary')).toBe(0);
+    expect(resolveDamage('sky', 'delacium', 'ordinary')).toBe(0);
+  });
+});
+
+describe('non-shining transformations', () => {
+  it('always allows switching between the ordinary forms regardless of light', () => {
+    expect(canTransform('multi', 0, false)).toBe(true);
+    expect(canTransform('power', 0, false)).toBe(true);
+    expect(canTransform('sky', 100, true)).toBe(true);
+  });
+});
+
 describe('Demogea body-burst finisher', () => {
   it('lets key 6 detonate Demogea while keeping shining energy full', () => {
     expect(resolveDemogeaFinisher('shining', 'demogea', 72)).toEqual({

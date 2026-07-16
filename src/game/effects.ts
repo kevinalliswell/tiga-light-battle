@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { disposeObject } from './disposal';
 
 interface ActiveEffect {
   object: THREE.Object3D;
@@ -8,15 +9,6 @@ interface ActiveEffect {
 }
 
 export type RevivalSource = 'people' | 'statues';
-
-function disposeObject(object: THREE.Object3D) {
-  object.traverse((child) => {
-    if (!(child instanceof THREE.Mesh || child instanceof THREE.Line)) return;
-    child.geometry.dispose();
-    const materials = Array.isArray(child.material) ? child.material : [child.material];
-    materials.forEach((item) => item.dispose());
-  });
-}
 
 function alignCylinder(object: THREE.Object3D, start: THREE.Vector3, end: THREE.Vector3) {
   const direction = new THREE.Vector3().subVectors(end, start);
@@ -123,13 +115,14 @@ export class Effects {
     alignCylinder(trail, kickStart.clone().addScaledVector(direction, -1.4), kickStart);
     group.add(trail);
     this.scene.add(group);
+    const position = new THREE.Vector3();
     this.effects.push({
       object: group,
       age: 0,
       duration: 0.72,
       update: (progress) => {
         const eased = 1 - (1 - progress) ** 3;
-        const position = new THREE.Vector3().lerpVectors(kickStart, end, eased);
+        position.lerpVectors(kickStart, end, eased);
         position.y += Math.sin(progress * Math.PI) * 1.4;
         core.position.copy(position);
         glow.position.copy(position);
@@ -272,15 +265,16 @@ export class Effects {
     );
     ring.rotation.x = Math.PI / 2;
     group.add(ring);
+    const sparkGeometry = new THREE.SphereGeometry(0.07 * scale, 5, 4);
+    const sparkMaterial = new THREE.MeshBasicMaterial({ color });
+    const sparks: THREE.Mesh[] = [];
     for (let index = 0; index < 10; index += 1) {
-      const spark = new THREE.Mesh(
-        new THREE.SphereGeometry(0.07 * scale, 5, 4),
-        new THREE.MeshBasicMaterial({ color }),
-      );
+      const spark = new THREE.Mesh(sparkGeometry, sparkMaterial);
       const angle = (index / 10) * Math.PI * 2;
       spark.userData.velocity = new THREE.Vector3(Math.cos(angle), Math.random() * 0.8, Math.sin(angle))
         .multiplyScalar(2.4 * scale);
       group.add(spark);
+      sparks.push(spark);
     }
     group.position.copy(position);
     this.scene.add(group);
@@ -291,10 +285,10 @@ export class Effects {
       update: (progress, delta) => {
         ring.scale.setScalar(1 + progress * 1.8);
         (ring.material as THREE.MeshBasicMaterial).opacity = 0.9 * (1 - progress);
-        group.children.slice(1).forEach((child) => {
-          child.position.addScaledVector(child.userData.velocity as THREE.Vector3, delta);
-          child.scale.setScalar(1 - progress * 0.8);
-        });
+        for (const spark of sparks) {
+          spark.position.addScaledVector(spark.userData.velocity as THREE.Vector3, delta);
+          spark.scale.setScalar(1 - progress * 0.8);
+        }
       },
     });
   }
