@@ -7,6 +7,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import type { GameAction, Hud, HudSnapshot } from '../ui/hud';
 import { BattleAudio } from './audio';
+import { disposeObject } from './disposal';
 import { Effects } from './effects';
 import {
   DEMOGEA_PROFILE,
@@ -176,6 +177,7 @@ export class TigaGame {
     this.bindInput();
     this.hud.onStart(() => this.start());
     this.hud.onTutorialSkip(() => this.skipTutorial());
+    this.hud.onToggleMute((muted) => this.audio?.setMuted(muted));
     this.hud.onAction((action, pressed) => this.handleAction(action, pressed));
     window.addEventListener('resize', () => this.resize());
     this.resize();
@@ -526,7 +528,10 @@ export class TigaGame {
   }
 
   private spawnWave() {
-    this.monsters.splice(0).forEach((monster) => this.scene.remove(monster.object));
+    this.monsters.splice(0).forEach((monster) => {
+      this.scene.remove(monster.object);
+      disposeObject(monster.object);
+    });
     const isGatanothor = this.wave === GATANOTHOR_WAVE;
     const isDemogea = this.wave === DEMOGEA_WAVE;
     const isBossWave = isGatanothor || isDemogea;
@@ -667,11 +672,10 @@ export class TigaGame {
       }
       const distance = monster.object.position.x - this.tiga.position.x;
       const horizontalDistance = Math.abs(distance);
-      const inRange = monster.profile.rangedAttack
-        ? horizontalDistance <= monster.profile.attackRange
-        : distance <= monster.profile.attackRange;
+      const inRange = horizontalDistance <= monster.profile.attackRange;
       if (!inRange) {
-        monster.object.position.x -= monster.profile.speed * delta;
+        const approach = Math.sign(distance) || 1;
+        monster.object.position.x -= approach * monster.profile.speed * delta;
       } else if (monster.attackCooldown <= 0) {
         const guarding = this.heldActions.has('guard');
         const damage = monster.profile.power * (guarding ? 0.28 : 1);
