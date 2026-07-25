@@ -104,12 +104,6 @@ function addEyes(
   }
 }
 
-function claw(surface: THREE.Material, position: [number, number, number], rotationZ: number) {
-  const result = part(new THREE.ConeGeometry(0.12, 0.62, 7), surface, position);
-  result.rotation.z = rotationZ;
-  return result;
-}
-
 function jointedLimb(
   surface: THREE.Material,
   jointSurface: THREE.Material,
@@ -477,14 +471,23 @@ function createGatanothor(profile: MonsterVisualProfile) {
 function createDemogea(profile: MonsterVisualProfile) {
   const monster = createGatanothor(profile);
   monster.scale.multiplyScalar(1.34);
+  // Gatanothor shares a handful of material instances across many meshes, so
+  // recolor each unique material exactly once — offsetHSL is cumulative and
+  // would otherwise stack per mesh, crushing shared surfaces toward black.
+  const recolored = new Set<THREE.Material>();
   monster.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return;
-    const material = object.material as THREE.MeshStandardMaterial;
-    if (material.color) material.color.offsetHSL(0.04, 0.12, -0.08);
-    if (material.emissive) {
-      material.emissive.setHex(0x5a113e);
-      material.emissiveIntensity = 2.2;
-    }
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    materials.forEach((item) => {
+      if (recolored.has(item)) return;
+      recolored.add(item);
+      const material = item as THREE.MeshStandardMaterial;
+      if (material.color) material.color.offsetHSL(0.04, 0.12, -0.08);
+      if (material.emissive) {
+        material.emissive.setHex(0x5a113e);
+        material.emissiveIntensity = 2.2;
+      }
+    });
   });
   return monster;
 }

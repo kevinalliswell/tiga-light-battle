@@ -42,6 +42,16 @@ export class BattleAudio {
   private sfxFilter: BiquadFilterNode | null = null;
   private musicTimer: number | null = null;
   private musicStep = 0;
+  private muted = false;
+
+  setMuted(muted: boolean) {
+    this.muted = muted;
+    if (this.masterGain) this.masterGain.gain.value = muted ? 0 : 0.68;
+  }
+
+  isMuted() {
+    return this.muted;
+  }
 
   start() {
     if (this.context) {
@@ -50,7 +60,7 @@ export class BattleAudio {
     }
     this.context = new AudioContext();
     this.masterGain = this.context.createGain();
-    this.masterGain.gain.value = 0.68;
+    this.masterGain.gain.value = this.muted ? 0 : 0.68;
     this.masterGain.connect(this.context.destination);
 
     this.musicGain = this.context.createGain();

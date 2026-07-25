@@ -69,6 +69,11 @@ const FORM_ABILITIES: Record<TigaForm, Ability[]> = {
   ],
 };
 
+// Base damage before form-strength scaling. Note: against ordinary monsters
+// every finisher ability short-circuits to a one-hit kill, and against the two
+// bosses only Zeperion / shining Super-Lightning read these numbers, so the
+// delacium / runboldt / evolution-ray entries are currently cosmetic reserves
+// kept for future rebalancing rather than live tuning knobs.
 const BASE_DAMAGE: Record<Ability, number> = {
   punch: 10,
   kick: 14,
