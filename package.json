@@ -27,7 +27,7 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
-    "lucide": "^0.468.0",
+    "lucide": "^1.27.0",
     "three": "^0.171.0"
   },
   "devDependencies": {
