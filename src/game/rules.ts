@@ -1,4 +1,4 @@
-export type TigaForm = 'power' | 'multi' | 'sky' | 'shining';
+export type TigaForm = 'power' | 'multi' | 'sky' | 'small-shining' | 'shining';
 export type Ability =
   | 'punch'
   | 'kick'
@@ -7,7 +7,10 @@ export type Ability =
   | 'zeperion'
   | 'runboldt'
   | 'evolution-ray'
-  | 'super-lightning';
+  | 'super-lightning'
+  | 'tiga-freeze'
+  | 'tiga-slash'
+  | 'flying-charge';
 export type DefeatReason = 'exhausted' | 'defeated';
 export type RevivalMethod = 'flashlight' | 'belief';
 export type EnergyPhase = 'stable' | 'warning' | 'critical';
@@ -45,18 +48,20 @@ export const FORM_STATS: Record<TigaForm, FormStats> = {
     accent: 0x6c62c9,
   },
   shining: {
-    label: '闪耀型',
+    label: '大闪耀',
     strength: 1.95,
     speed: 1.9,
     color: 0xd8b43f,
     accent: 0xffe588,
   },
+  'small-shining': {label:'小闪耀',strength:1.75,speed:1.7,color:0xd8b43f,accent:0xffe588},
 };
 
 const FORM_ABILITIES: Record<TigaForm, Ability[]> = {
-  power: ['punch', 'kick', 'boomerang', 'delacium'],
-  multi: ['punch', 'kick', 'boomerang', 'zeperion'],
-  sky: ['punch', 'kick', 'boomerang', 'runboldt'],
+  'small-shining': ['punch','kick','boomerang','delacium','zeperion','runboldt','evolution-ray','super-lightning','tiga-freeze','tiga-slash','flying-charge'],
+  power: ['punch', 'kick', 'boomerang', 'delacium', 'tiga-slash'],
+  multi: ['punch', 'kick', 'boomerang', 'zeperion', 'tiga-freeze', 'tiga-slash'],
+  sky: ['punch', 'kick', 'boomerang', 'runboldt', 'tiga-freeze', 'flying-charge'],
   shining: [
     'punch',
     'kick',
@@ -66,6 +71,7 @@ const FORM_ABILITIES: Record<TigaForm, Ability[]> = {
     'runboldt',
     'evolution-ray',
     'super-lightning',
+    'tiga-freeze', 'tiga-slash', 'flying-charge',
   ],
 };
 
@@ -83,6 +89,9 @@ const BASE_DAMAGE: Record<Ability, number> = {
   runboldt: 30,
   'evolution-ray': 52,
   'super-lightning': 80,
+  'tiga-freeze': 12,
+  'tiga-slash': 70,
+  'flying-charge': 42,
 };
 
 const FINISHER_ABILITIES: Ability[] = [
@@ -95,6 +104,14 @@ const FINISHER_ABILITIES: Ability[] = [
 
 export function canUseAbility(form: TigaForm, ability: Ability): boolean {
   return FORM_ABILITIES[form].includes(ability);
+}
+
+export function formForAbility(form: TigaForm, ability: Ability): TigaForm {
+  if (canUseAbility(form, ability)) return form;
+  if (ability === 'delacium') return 'power';
+  if (ability === 'runboldt' || ability === 'flying-charge') return 'sky';
+  if (ability === 'evolution-ray' || ability === 'super-lightning') return 'shining';
+  return 'multi';
 }
 
 export function requiresCloseRange(ability: Ability): boolean {
@@ -120,7 +137,8 @@ export function canEnterEarthView(holdSeconds: number): boolean {
   return holdSeconds >= EARTH_VIEW_HOLD_SECONDS;
 }
 
-export type PerspectiveKey = 'k' | 'n';
+/** L+N is the current binding; K remains accepted for old saved/test inputs. */
+export type PerspectiveKey = 'l' | 'k' | 'n';
 export const PERSPECTIVE_SWITCH_WINDOW_SECONDS = 10;
 
 export function canTogglePerspective(
@@ -145,7 +163,7 @@ export function canTransform(
 }
 
 export function hasInfiniteEnergy(form: TigaForm): boolean {
-  return form === 'shining';
+  return form === 'shining' || form === 'small-shining';
 }
 
 export function hasInfiniteHealth(form: TigaForm): boolean {
@@ -177,10 +195,23 @@ export function resolveDamage(
     if (ability === 'zeperion') {
       return Math.round(BASE_DAMAGE[ability] * FORM_STATS[form].strength);
     }
-    return form === 'shining' && ability === 'super-lightning' ? BASE_DAMAGE[ability] : 0;
+    return (form === 'shining' || form === 'small-shining') && ability === 'super-lightning' ? BASE_DAMAGE[ability] : 0;
   }
   if (FINISHER_ABILITIES.includes(ability)) return 999;
   return Math.round(BASE_DAMAGE[ability] * FORM_STATS[form].strength);
+}
+
+export function isOrdinaryRay(ability: Ability): boolean {
+  return ability === 'delacium' || ability === 'zeperion' || ability === 'runboldt';
+}
+
+export function resolveBelialDamage(damage: number, ability: Ability, rayDamageTaken: number, health: number): number {
+  if (!isOrdinaryRay(ability)) return Math.min(health, Math.max(0, damage));
+  return Math.max(0, Math.min(damage, 400 - rayDamageTaken, health - 1));
+}
+
+export function belialAttackDamage(closeRange: boolean): number {
+  return closeRange ? 70 : 85;
 }
 
 export function resolveDemogeaFinisher(
@@ -188,7 +219,7 @@ export function resolveDemogeaFinisher(
   target: DamageTarget,
   energy: number,
 ): { canUse: boolean; damage: number; remainingEnergy: number } {
-  const canUse = form === 'shining' && target === 'demogea' && energy > 1;
+  const canUse = (form === 'shining' || form === 'small-shining') && target === 'demogea' && energy > 1;
   return {
     canUse,
     damage: canUse ? 9999 : 0,

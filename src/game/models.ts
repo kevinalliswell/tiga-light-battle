@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 import { createMonsterVisual } from './monsterModels';
-import { FORM_STATS, type TigaForm } from './rules';
+import { FORM_STATS, type TigaForm, type Ability } from './rules';
+import { createBelial } from './tigaModel';
 
 export { createTiga } from './tigaModel';
 
 export interface MonsterProfile {
-  id: 'golza' | 'melba' | 'kyrieloid' | 'gatanothor' | 'demogea';
+  id: 'golza' | 'melba' | 'kyrieloid' | 'gatanothor' | 'demogea' | 'belial';
   name: string;
   maxHealth: number;
   speed: number;
@@ -18,6 +19,9 @@ export interface MonsterProfile {
   rangedBeamCount?: number;
   color: number;
   accent: number;
+  tier?: number;
+  variant?: 'enhanced';
+  requiredFinisher?: Ability[];
 }
 
 export const MONSTER_PROFILES: MonsterProfile[] = [
@@ -74,7 +78,7 @@ export const GATANOTHOR_PROFILE: MonsterProfile = {
 
 export const DEMOGEA_PROFILE: MonsterProfile = {
   id: 'demogea',
-  name: '迪莫杰厄',
+  name: '梅加洛杰厄',
   maxHealth: 420,
   speed: 0.58,
   power: 30,
@@ -122,7 +126,48 @@ export function applyTigaForm(tiga: THREE.Group, form: TigaForm) {
 }
 
 export function createMonster(profile: MonsterProfile): THREE.Group {
+  if (profile.id === 'belial') {
+    return createBelial();
+  }
   return createMonsterVisual(profile);
+}
+
+export const BELIAL_PROFILE: MonsterProfile = {
+  id: 'belial', name: '贝利亚', maxHealth: 1000, speed: 2, power: 70,
+  attackRange: 15, canFly: true, canSpaceFly: true, rangedAttack: true,
+  rangedAttackInSpace: true, color: 0x19151e, accent: 0xd52a31,
+};
+
+export function createHuman(variant=0): THREE.Group {
+  const human = new THREE.Group();
+  const suit = new THREE.MeshStandardMaterial({ color: [0xc3cbd2,0x8f9ca9,0xc3cbd2,0xa9b7aa,0xb48d7c,0x777c97][variant%6],roughness:.76 });
+  const dark = new THREE.MeshStandardMaterial({color:0x24354a,roughness:.65});
+  const red = new THREE.MeshStandardMaterial({color:0xaf3542,roughness:.6});
+  const skin = new THREE.MeshStandardMaterial({ color: 0xe5b694,roughness:.85 });
+  const add=(geometry:THREE.BufferGeometry,material:THREE.Material,x:number,y:number,z:number,parent:THREE.Object3D=human)=>{
+    const mesh=new THREE.Mesh(geometry,material);mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;
+  };
+  const body=add(new THREE.CylinderGeometry(.20,.14,.47,20),suit,0,1.01,0);body.scale.z=.65;
+  add(new THREE.BoxGeometry(.29,.07,.21),dark,0,.76,0);
+  if(variant<3)add(new THREE.BoxGeometry(.34,.08,.025),red,0,1.11,.135);
+  const head=add(new THREE.SphereGeometry(.115,24,20),skin,0,1.47,0);head.scale.set(.86,1.2,.92);
+  const hair=add(new THREE.SphereGeometry(.118,20,16,0,Math.PI*2,0,Math.PI*.48),dark,0,1.51,-.015);hair.scale.set(.9,1,.94);
+  for(const sign of [-1,1]) {
+    const eye=add(new THREE.SphereGeometry(.009,8,8),dark,sign*.039,1.49,.100);eye.scale.y=.55;
+    const arm=new THREE.Group();arm.name=`${sign<0?'left':'right'}-arm`;arm.position.set(sign*.215,1.20,0);human.add(arm);
+    add(new THREE.CapsuleGeometry(.052,.16,6,12),suit,0,-.11,0,arm);
+    add(new THREE.CapsuleGeometry(.043,.18,6,12),suit,0,-.33,.025,arm);
+    const hand=add(new THREE.SphereGeometry(.046,12,10),skin,0,-.48,.025,arm);hand.scale.y=1.35;
+    const leg=new THREE.Group();leg.name=`${sign<0?'left':'right'}-leg`;leg.position.set(sign*.085,.74,0);human.add(leg);
+    add(new THREE.CapsuleGeometry(.067,.23,6,12),dark,0,-.17,0,leg);
+    add(new THREE.CapsuleGeometry(.052,.22,6,12),dark,0,-.48,.015,leg);
+    add(new THREE.BoxGeometry(.12,.09,.22),dark,0,-.69,.05,leg);
+  }
+  add(new THREE.CylinderGeometry(.042,.05,.14,12),skin,0,1.31,0);
+  add(new THREE.SphereGeometry(.019,12,8),skin,0,1.465,.108);
+  const mouth=add(new THREE.SphereGeometry(.018,12,8),red,0,1.425,.103);mouth.scale.set(1,.16,.15);mouth.name='mouth';
+  if(variant<3)add(new THREE.BoxGeometry(.035,.04,.03),red,.10,1.08,.15);
+  return human;
 }
 
 function addWindowGrid(building: THREE.Mesh, width: number, height: number, depth: number) {
@@ -202,6 +247,7 @@ function asphaltBumpTexture() {
 
 export function createCity(): THREE.Group {
   const city = new THREE.Group();
+  city.name = 'earth-city';
   const roadMaterial = new THREE.MeshPhysicalMaterial({
     color: 0x35454d,
     emissive: 0x15242c,

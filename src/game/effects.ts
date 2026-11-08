@@ -22,6 +22,20 @@ export class Effects {
   private readonly crowdPositions: THREE.Vector3[] = [];
   private readonly statuePositions: THREE.Vector3[] = [];
 
+  windWall(position: THREE.Vector3, heading: number) {
+    const group=new THREE.Group();group.name='yasuo-wind-wall';
+    group.position.copy(position);group.rotation.y=heading;
+    const sheets:THREE.Mesh<THREE.PlaneGeometry,THREE.MeshBasicMaterial>[]=[];
+    for(let i=0;i<7;i++){
+      const sheet=new THREE.Mesh(new THREE.PlaneGeometry(12,.4),new THREE.MeshBasicMaterial({color:0xacefe6,transparent:true,opacity:.6,side:THREE.DoubleSide,depthWrite:false}));
+      sheet.position.set(0,1+i*.9,3);group.add(sheet);sheets.push(sheet);
+    }
+    this.scene.add(group);
+    this.effects.push({object:group,age:0,duration:4,update:p=>sheets.forEach((sheet,i)=>{
+      sheet.position.x=Math.sin(p*28+i)*.7;sheet.material.opacity=Math.sin(Math.min(1,p*8)*Math.PI/2)*(1-p)*.65;
+    })});
+  }
+
   constructor(scene: THREE.Scene) {
     this.scene = scene;
     this.createCrowd();
@@ -39,10 +53,77 @@ export class Effects {
       disposeObject(effect.object);
       this.effects.splice(index, 1);
     }
+    const spectators = this.scene.getObjectByName('rescue-spectators');
+    if (spectators) spectators.visible = this.effects.some(effect => ['crowd-light-rescue','revival-lights'].includes(effect.object.name));
+  }
+
+  charge(root: THREE.Group, duration: number) {
+    const group = new THREE.Group();group.name = 'ray-charge';
+    const material = new THREE.MeshBasicMaterial({color:0xc1eeff,transparent:true,opacity:.7,depthWrite:false});
+    const sparks = Array.from({length:24},()=>new THREE.Mesh(new THREE.SphereGeometry(.065,6,4),material));
+    group.add(...sparks);this.scene.add(group);
+    this.effects.push({object:group,age:0,duration,update:progress=>{
+      root.updateMatrixWorld(true);
+      sparks.forEach((spark,index)=>{
+        const hand=root.getObjectByName(index%2?'right-hand':'left-hand');
+        const origin=hand?.getWorldPosition(new THREE.Vector3())??root.position;
+        const angle=progress*18+index*2.4,radius=(1-progress)*1.2+.12;
+        spark.position.copy(origin).add(new THREE.Vector3(Math.cos(angle)*radius,Math.sin(angle)*radius,Math.cos(angle*1.4)*radius));
+        spark.scale.setScalar(.5+progress*1.4);
+      });
+    }});
+  }
+
+  ultraExplosion(position:THREE.Vector3){
+    const group=new THREE.Group();group.name='ultra-explosion';group.position.copy(position);
+    const sphere=new THREE.Mesh(new THREE.SphereGeometry(1,32,20),new THREE.MeshBasicMaterial({color:0xffdf9b,transparent:true,opacity:.8,depthWrite:false}));
+    const rings=[0,1,2].map(i=>{
+      const ring=new THREE.Mesh(new THREE.TorusGeometry(1,.035,8,64),new THREE.MeshBasicMaterial({color:i%2?0xffd56b:0xd8f5ff,transparent:true,opacity:.9,depthWrite:false}));
+      ring.rotation.x=Math.PI/2+i*.45;group.add(ring);return ring;
+    });
+    group.add(sphere);this.scene.add(group);
+    this.effects.push({object:group,age:0,duration:2.5,update:progress=>{
+      const radius=1+Math.pow(progress,.55)*40;sphere.scale.setScalar(radius);sphere.material.opacity=.65*(1-progress)**2;
+      rings.forEach((ring,i)=>{ring.scale.setScalar(radius*(1-i*.12));ring.material.opacity=(1-progress)*.9;});
+    }});
+  }
+
+  freeze(start: THREE.Vector3, end: THREE.Vector3) {
+    this.beam(start,end,0x71caff,.18);
+    const group=new THREE.Group();group.name='ice-crystals';group.position.copy(end);
+    for(let i=0;i<12;i++){
+      const crystal=new THREE.Mesh(new THREE.OctahedronGeometry(.55,0),new THREE.MeshBasicMaterial({color:i%2?0x9deaff:0xe2faff,transparent:true,opacity:.6,wireframe:i%3===0}));
+      crystal.position.set(Math.sin(i*2.4)*1.3,Math.cos(i*1.7)*2,Math.cos(i*2.4)*.9);crystal.scale.set(.6,1.8,.6);group.add(crystal);
+    }
+    this.scene.add(group);this.effects.push({object:group,age:0,duration:4,update:p=>{group.rotation.y=p*.6;group.scale.setScalar(1+Math.sin(p*3)*.1);group.children.forEach(c=>{((c as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity=Math.min(.6,(1-p)*3);});}});
+  }
+
+  slash(start: THREE.Vector3,end: THREE.Vector3) {
+    const blade=new THREE.Mesh(new THREE.TorusGeometry(1.5,.12,6,32,Math.PI*1.1),new THREE.MeshBasicMaterial({color:0xbdefff,transparent:true,opacity:1,side:THREE.DoubleSide}));
+    blade.position.copy(start);blade.rotation.z=-.8;this.scene.add(blade);
+    this.effects.push({object:blade,age:0,duration:.65,update:p=>{blade.position.lerpVectors(start,end,p);blade.rotation.z=-.8+p*2;blade.scale.setScalar(1+p);blade.material.opacity=1-p;}});
+    this.impact(end,0xa7eeff,2);
+  }
+
+  rescueLights(target: THREE.Vector3) {
+    const group = new THREE.Group();group.name='crowd-light-rescue';
+    const beams:THREE.Mesh<THREE.CylinderGeometry,THREE.MeshBasicMaterial>[]=[];
+    for(let index=0;index<100;index++){
+      const angle=index*2.39996;
+      const origin=new THREE.Vector3(Math.cos(angle)*(15+index%8),.6,Math.sin(angle)*(8+index%6));
+      const beam=new THREE.Mesh(new THREE.CylinderGeometry(.012,.045,origin.distanceTo(target),5),new THREE.MeshBasicMaterial({color:index%3?0xd8f8ff:0xffe2a4,transparent:true,opacity:0,depthWrite:false}));
+      alignCylinder(beam,origin,target);group.add(beam);beams.push(beam);
+    }
+    this.scene.add(group);
+    this.effects.push({object:group,age:0,duration:6,update:progress=>{
+      beams.forEach((beam,index)=>{beam.material.opacity=Math.max(0,Math.sin(progress*Math.PI))*(.35+Math.sin(index+progress*12)*.2);});
+    }});
+    this.impact(target,0xffefbd,5);
   }
 
   beam(start: THREE.Vector3, end: THREE.Vector3, color: number, width = 0.2) {
     const group = new THREE.Group();
+    group.name='skill-beam';
     const length = start.distanceTo(end);
     const glow = new THREE.Mesh(
       new THREE.CylinderGeometry(width * 2.1, width * 2.1, length, 10),
@@ -58,11 +139,12 @@ export class Effects {
     this.effects.push({
       object: group,
       age: 0,
-      duration: 0.48,
+      duration: 0.8,
       update: (progress) => {
-        group.scale.set(1 + progress * 0.5, 1, 1 + progress * 0.5);
-        (glow.material as THREE.MeshBasicMaterial).opacity = 0.2 * (1 - progress);
-        (core.material as THREE.MeshBasicMaterial).opacity = 1 - progress;
+        const pulse=1+Math.sin(progress*65)*.13;
+        group.scale.set(pulse, 1, pulse);
+        (glow.material as THREE.MeshBasicMaterial).opacity = 0.3 * Math.min(1,(1-progress)*5);
+        (core.material as THREE.MeshBasicMaterial).opacity = Math.min(1,(1-progress)*5);
       },
     });
     this.impact(end, color, 1.6);
@@ -313,6 +395,7 @@ export class Effects {
 
   revival(target: THREE.Vector3, source: RevivalSource) {
     const group = new THREE.Group();
+    group.name = 'revival-lights';
     const fromStatues = source === 'statues';
     const chosen = fromStatues ? this.statuePositions : this.crowdPositions.filter((_, index) => index % 3 === 0);
     chosen.forEach((origin, index) => {
@@ -372,6 +455,9 @@ export class Effects {
       crowd.add(person);
       this.crowdPositions.push(new THREE.Vector3(x, 0.68, z - side * 0.15));
     }
+    // Keep spectators at the edge of the scene, visible during light rescues.
+    crowd.name = 'rescue-spectators';
+    crowd.visible = false;
     this.scene.add(crowd);
   }
 
@@ -414,6 +500,8 @@ export class Effects {
       statues.add(statue);
       this.statuePositions.push(new THREE.Vector3(x, 2.55, -8.2));
     });
+    // These positions supply the revival lights without toy statues in every region.
+    statues.visible = false;
     this.scene.add(statues);
   }
 }
