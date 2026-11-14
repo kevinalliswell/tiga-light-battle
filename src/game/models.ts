@@ -1,20 +1,27 @@
 import * as THREE from 'three';
 import { createMonsterVisual } from './monsterModels';
-import { FORM_STATS, type TigaForm } from './rules';
+import { FORM_STATS, type TigaForm, type Ability } from './rules';
+import { createBelial } from './tigaModel';
 
 export { createTiga } from './tigaModel';
 
 export interface MonsterProfile {
-  id: 'golza' | 'melba' | 'kyrieloid' | 'gatanothor' | 'demogea';
+  id: 'golza' | 'melba' | 'kyrieloid' | 'gatanothor' | 'demogea' | 'belial';
   name: string;
   maxHealth: number;
   speed: number;
   power: number;
   attackRange: number;
   canFly: boolean;
+  canSpaceFly: boolean;
   rangedAttack?: boolean;
+  rangedAttackInSpace?: boolean;
+  rangedBeamCount?: number;
   color: number;
   accent: number;
+  tier?: number;
+  variant?: 'enhanced';
+  requiredFinisher?: Ability[];
 }
 
 export const MONSTER_PROFILES: MonsterProfile[] = [
@@ -26,6 +33,7 @@ export const MONSTER_PROFILES: MonsterProfile[] = [
     power: 15,
     attackRange: 3.5,
     canFly: false,
+    canSpaceFly: false,
     color: 0x514842,
     accent: 0xb24a35,
   },
@@ -37,6 +45,7 @@ export const MONSTER_PROFILES: MonsterProfile[] = [
     power: 11,
     attackRange: 4.5,
     canFly: true,
+    canSpaceFly: false,
     color: 0x6c4534,
     accent: 0xd3a145,
   },
@@ -48,6 +57,7 @@ export const MONSTER_PROFILES: MonsterProfile[] = [
     power: 13,
     attackRange: 5,
     canFly: true,
+    canSpaceFly: true,
     color: 0x3d4050,
     accent: 0xa94742,
   },
@@ -61,19 +71,23 @@ export const GATANOTHOR_PROFILE: MonsterProfile = {
   power: 24,
   attackRange: 6,
   canFly: false,
+  canSpaceFly: false,
   color: 0x17191c,
   accent: 0x59616a,
 };
 
 export const DEMOGEA_PROFILE: MonsterProfile = {
   id: 'demogea',
-  name: '迪莫杰厄',
+  name: '梅加洛杰厄',
   maxHealth: 420,
   speed: 0.58,
   power: 30,
   attackRange: 30,
   canFly: false,
+  canSpaceFly: false,
   rangedAttack: true,
+  rangedAttackInSpace: false,
+  rangedBeamCount: 7,
   color: 0x241625,
   accent: 0xb54e7c,
 };
@@ -112,7 +126,48 @@ export function applyTigaForm(tiga: THREE.Group, form: TigaForm) {
 }
 
 export function createMonster(profile: MonsterProfile): THREE.Group {
+  if (profile.id === 'belial') {
+    return createBelial();
+  }
   return createMonsterVisual(profile);
+}
+
+export const BELIAL_PROFILE: MonsterProfile = {
+  id: 'belial', name: '贝利亚', maxHealth: 1000, speed: 2, power: 70,
+  attackRange: 15, canFly: true, canSpaceFly: true, rangedAttack: true,
+  rangedAttackInSpace: true, color: 0x19151e, accent: 0xd52a31,
+};
+
+export function createHuman(variant=0): THREE.Group {
+  const human = new THREE.Group();
+  const suit = new THREE.MeshStandardMaterial({ color: [0xc3cbd2,0x8f9ca9,0xc3cbd2,0xa9b7aa,0xb48d7c,0x777c97][variant%6],roughness:.76 });
+  const dark = new THREE.MeshStandardMaterial({color:0x24354a,roughness:.65});
+  const red = new THREE.MeshStandardMaterial({color:0xaf3542,roughness:.6});
+  const skin = new THREE.MeshStandardMaterial({ color: 0xe5b694,roughness:.85 });
+  const add=(geometry:THREE.BufferGeometry,material:THREE.Material,x:number,y:number,z:number,parent:THREE.Object3D=human)=>{
+    const mesh=new THREE.Mesh(geometry,material);mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;
+  };
+  const body=add(new THREE.CylinderGeometry(.20,.14,.47,20),suit,0,1.01,0);body.scale.z=.65;
+  add(new THREE.BoxGeometry(.29,.07,.21),dark,0,.76,0);
+  if(variant<3)add(new THREE.BoxGeometry(.34,.08,.025),red,0,1.11,.135);
+  const head=add(new THREE.SphereGeometry(.115,24,20),skin,0,1.47,0);head.scale.set(.86,1.2,.92);
+  const hair=add(new THREE.SphereGeometry(.118,20,16,0,Math.PI*2,0,Math.PI*.48),dark,0,1.51,-.015);hair.scale.set(.9,1,.94);
+  for(const sign of [-1,1]) {
+    const eye=add(new THREE.SphereGeometry(.009,8,8),dark,sign*.039,1.49,.100);eye.scale.y=.55;
+    const arm=new THREE.Group();arm.name=`${sign<0?'left':'right'}-arm`;arm.position.set(sign*.215,1.20,0);human.add(arm);
+    add(new THREE.CapsuleGeometry(.052,.16,6,12),suit,0,-.11,0,arm);
+    add(new THREE.CapsuleGeometry(.043,.18,6,12),suit,0,-.33,.025,arm);
+    const hand=add(new THREE.SphereGeometry(.046,12,10),skin,0,-.48,.025,arm);hand.scale.y=1.35;
+    const leg=new THREE.Group();leg.name=`${sign<0?'left':'right'}-leg`;leg.position.set(sign*.085,.74,0);human.add(leg);
+    add(new THREE.CapsuleGeometry(.067,.23,6,12),dark,0,-.17,0,leg);
+    add(new THREE.CapsuleGeometry(.052,.22,6,12),dark,0,-.48,.015,leg);
+    add(new THREE.BoxGeometry(.12,.09,.22),dark,0,-.69,.05,leg);
+  }
+  add(new THREE.CylinderGeometry(.042,.05,.14,12),skin,0,1.31,0);
+  add(new THREE.SphereGeometry(.019,12,8),skin,0,1.465,.108);
+  const mouth=add(new THREE.SphereGeometry(.018,12,8),red,0,1.425,.103);mouth.scale.set(1,.16,.15);mouth.name='mouth';
+  if(variant<3)add(new THREE.BoxGeometry(.035,.04,.03),red,.10,1.08,.15);
+  return human;
 }
 
 function addWindowGrid(building: THREE.Mesh, width: number, height: number, depth: number) {
@@ -192,9 +247,13 @@ function asphaltBumpTexture() {
 
 export function createCity(): THREE.Group {
   const city = new THREE.Group();
+  city.name = 'earth-city';
   const roadMaterial = new THREE.MeshPhysicalMaterial({
-    color: 0x171d21,
-    roughness: 0.78,
+    color: 0x35454d,
+    emissive: 0x15242c,
+    emissiveIntensity: 0.9,
+    roughness: 0.82,
+    side: THREE.DoubleSide,
     metalness: 0.06,
     clearcoat: 0.3,
     clearcoatRoughness: 0.26,
@@ -202,6 +261,7 @@ export function createCity(): THREE.Group {
     bumpScale: 0.035,
   });
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(90, 48), roadMaterial);
+  ground.name = 'city-ground';
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   city.add(ground);
@@ -304,4 +364,82 @@ export function createCity(): THREE.Group {
   }
 
   return city;
+}
+
+export function createEarth(): THREE.Group {
+  const earth = new THREE.Group();
+  earth.name = 'earth-view';
+
+  const ocean = new THREE.Mesh(
+    new THREE.SphereGeometry(5.6, 48, 32),
+    new THREE.MeshPhysicalMaterial({
+      color: 0x1c6aa3,
+      metalness: 0.08,
+      roughness: 0.48,
+      clearcoat: 0.66,
+      clearcoatRoughness: 0.2,
+      emissive: 0x062544,
+      emissiveIntensity: 0.3,
+    }),
+  );
+  earth.add(ocean);
+
+  const continentMaterial = new THREE.MeshStandardMaterial({
+    color: 0x5d9b57,
+    roughness: 0.94,
+    metalness: 0.02,
+    side: THREE.DoubleSide,
+  });
+  const continents: Array<[number, number, number, number]> = [
+    [0.45, 0.2, 1.9, 1.15],
+    [0.12, 1.35, 1.55, 0.82],
+    [-0.38, 2.42, 1.72, 0.88],
+    [-0.56, -1.8, 1.3, 0.66],
+    [0.65, -2.4, 1.4, 0.72],
+    [-0.08, -0.55, 1.15, 0.58],
+  ];
+  continents.forEach(([latitude, longitude, width, height]) => {
+    const radius = 5.82;
+    const position = new THREE.Vector3(
+      radius * Math.cos(latitude) * Math.cos(longitude),
+      radius * Math.sin(latitude),
+      radius * Math.cos(latitude) * Math.sin(longitude),
+    );
+    const patch = new THREE.Mesh(new THREE.CircleGeometry(1, 18), continentMaterial);
+    patch.position.copy(position);
+    patch.scale.set(width, height, 1);
+    patch.lookAt(new THREE.Vector3(0, 0, 0));
+    patch.renderOrder = 10;
+    earth.add(patch);
+  });
+
+  const cloudLayer = new THREE.Mesh(
+    new THREE.SphereGeometry(5.82, 40, 24),
+    new THREE.MeshBasicMaterial({
+      color: 0xd8f4ff,
+      transparent: true,
+      opacity: 0.09,
+      wireframe: true,
+      depthWrite: false,
+    }),
+  );
+  cloudLayer.name = 'earth-clouds';
+  earth.add(cloudLayer);
+
+  const atmosphere = new THREE.Mesh(
+    new THREE.SphereGeometry(6.2, 40, 24),
+    new THREE.MeshBasicMaterial({
+      color: 0x67c9ff,
+      transparent: true,
+      opacity: 0.18,
+      side: THREE.BackSide,
+      depthWrite: false,
+    }),
+  );
+  earth.add(atmosphere);
+  earth.visible = false;
+  earth.renderOrder = 8;
+  cloudLayer.renderOrder = 8;
+  atmosphere.renderOrder = 8;
+  return earth;
 }

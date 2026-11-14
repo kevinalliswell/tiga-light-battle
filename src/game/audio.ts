@@ -36,16 +36,39 @@ export type AudioCue =
 export class BattleAudio {
   private context: AudioContext | null = null;
   private masterGain: GainNode | null = null;
-  private musicGain: GainNode | null = null;
   private sfxGain: GainNode | null = null;
-  private musicFilter: BiquadFilterNode | null = null;
   private sfxFilter: BiquadFilterNode | null = null;
-  private musicTimer: number | null = null;
-  private musicStep = 0;
   private muted = false;
+  private readonly song = new Audio();
+  private songUrl: string | null = null;
+  private climax = false;
+  private musicGain:GainNode|null=null;
+  private nextBeat=0;
+  private beat=0;
+
+  setSong(file: File) {
+    this.song.pause();
+    if (this.songUrl) URL.revokeObjectURL(this.songUrl);
+    this.songUrl = URL.createObjectURL(file);
+    this.song.src = this.songUrl;
+    this.song.loop = true;
+    this.song.volume = 0.58;
+    this.song.muted = this.muted;
+    this.updateMusicGain();
+    if (this.climax) void this.song.play().catch(() => undefined);
+  }
+
+  setClimax(active: boolean) {
+    if (active === this.climax) return;
+    this.climax = active;
+    this.updateMusicGain();
+    if (active && this.songUrl) void this.song.play().catch(() => undefined);
+    else this.song.pause();
+  }
 
   setMuted(muted: boolean) {
     this.muted = muted;
+    this.song.muted = muted;
     if (this.masterGain) this.masterGain.gain.value = muted ? 0 : 0.68;
   }
 
@@ -63,22 +86,44 @@ export class BattleAudio {
     this.masterGain.gain.value = this.muted ? 0 : 0.68;
     this.masterGain.connect(this.context.destination);
 
-    this.musicGain = this.context.createGain();
-    this.musicGain.gain.value = 0.24;
-    this.musicFilter = this.context.createBiquadFilter();
-    this.musicFilter.type = 'lowpass';
-    this.musicFilter.frequency.value = 2800;
-    this.musicGain.connect(this.musicFilter).connect(this.masterGain);
     this.sfxGain = this.context.createGain();
-    this.sfxGain.gain.value = 0.74;
+    this.sfxGain.gain.value = 0.48;
     this.sfxFilter = this.context.createBiquadFilter();
     this.sfxFilter.type = 'lowpass';
-    this.sfxFilter.frequency.value = 8200;
+    this.sfxFilter.frequency.value = 3600;
     this.sfxGain.connect(this.sfxFilter).connect(this.masterGain);
+    this.musicGain=this.context.createGain();
+    this.musicGain.gain.value=0;
+    this.musicGain.connect(this.masterGain);
+    window.setInterval(()=>this.scheduleScore(),120);
 
-    this.scheduleThemeStep();
-    this.musicTimer = window.setInterval(() => this.scheduleThemeStep(), 420);
     void this.context.resume();
+  }
+
+  private updateMusicGain() {
+    if(!this.context||!this.musicGain)return;
+    this.musicGain.gain.setTargetAtTime(this.climax&&!this.songUrl?1:0,this.context.currentTime,.5);
+  }
+
+  /** An original layered score; importing a recording replaces this accompaniment. */
+  private scheduleScore() {
+    if(!this.context||!this.musicGain)return;
+    if(!this.climax||this.songUrl){this.nextBeat=this.context.currentTime;return;}
+    this.updateMusicGain();
+    if(this.nextBeat<this.context.currentTime)this.nextBeat=this.context.currentTime+.05;
+    const chords=[[220,261.63,329.63],[174.61,220,261.63],[196,246.94,293.66],[164.81,196,246.94]];
+    while(this.nextBeat<this.context.currentTime+.45) {
+      const step=this.beat%16,chord=chords[Math.floor(this.beat/16)%4];
+      const delay=this.nextBeat-this.context.currentTime;
+      if(step%4===0)for(const frequency of chord) {
+        this.sweep(frequency,frequency,1.5,'sine',.018,delay,this.musicGain);
+        this.sweep(frequency*2,frequency*2,1.3,'triangle',.006,delay,this.musicGain);
+      }
+      this.sweep(chord[0]/2,chord[0]/2,.42,'sine',.033,delay,this.musicGain);
+      this.sweep(HERO_THEME[this.beat%HERO_THEME.length]*2,HERO_THEME[this.beat%HERO_THEME.length]*2,.48,'sine',.017,delay,this.musicGain);
+      if(step%4===0)this.sweep(110,42,.18,'sine',.055,delay,this.musicGain);
+      this.nextBeat+=.28;this.beat++;
+    }
   }
 
   tone(
@@ -118,6 +163,9 @@ export class BattleAudio {
         this.noise(0.18, 0.026, 1800, 'lowpass');
         break;
       case 'zeperion':
+      case 'tiga-freeze':
+      case 'tiga-slash':
+      case 'flying-charge':
         this.sweep(230, 940, 0.46, 'sine', 0.074);
         this.sweep(520, 1460, 0.34, 'triangle', 0.032, 0.05);
         this.noise(0.11, 0.018, 5200, 'highpass');
@@ -183,19 +231,6 @@ export class BattleAudio {
         this.sweep(72, 30, 0.8, 'sine', 0.06, 0.18);
         break;
     }
-  }
-
-  private scheduleThemeStep() {
-    if (!this.context || !this.musicGain) return;
-    const note = HERO_THEME[this.musicStep % HERO_THEME.length];
-    this.sweep(note, note * 1.01, 0.34, 'triangle', 0.052, 0, this.musicGain);
-    if (this.musicStep % 4 === 0) {
-      this.sweep(note / 2, note / 2, 0.4, 'sine', 0.042, 0, this.musicGain);
-    }
-    if (this.musicStep % 8 === 4) {
-      this.sweep(note * 1.5, note * 1.5, 0.36, 'sine', 0.018, 0, this.musicGain);
-    }
-    this.musicStep += 1;
   }
 
   private sweep(

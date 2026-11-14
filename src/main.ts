@@ -1,6 +1,12 @@
-import './style.css';
-import { TigaGame } from './game/Game';
-import { Hud } from './ui/hud';
+async function boot() {
+if (new URLSearchParams(window.location.search).get('game') !== 'tiga') {
+  await import('./social/game');
+} else {
+document.title = '迪迦：光之决战';
+await import('./style.css');
+await import('./ui/layout.css');
+const { TigaGame } = await import('./game/Game');
+const { Hud } = await import('./ui/hud');
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Application root was not found');
@@ -27,3 +33,7 @@ try {
       <p>请更新到较新的浏览器，或换用支持 WebGL 的设备后再试。</p>
     </div>`;
 }
+}
+}
+
+void boot();

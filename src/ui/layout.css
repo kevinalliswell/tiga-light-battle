@@ -1,0 +1,86 @@
+/* Combat HUD: top status, contextual side notices, bottom skill tray.
+   All controls within a zone flow normally; only the zones are anchored. */
+:root{--status-bottom:86px;--cinema-bottom:145px;--tray-height:184px}
+body .hud .combat-feedback{margin:0;padding:5px 8px;border-left:2px solid #f1cf87;border-radius:4px;background:#ffd68a0b;color:#f8dfab;font-size:11px;line-height:1.4;pointer-events:none}
+body .hud .duo-panel{position:absolute;top:var(--cinema-bottom);right:10px;width:min(280px,30vw);max-height:calc(100dvh - var(--cinema-bottom) - var(--tray-height) - 40px);overflow:auto;padding:8px;background:#102535eb;border:1px solid #87d7ff44;border-radius:10px;pointer-events:auto;font-size:11px;z-index:7}
+body .duo-controls{display:flex;flex-wrap:wrap;gap:5px}body .duo-controls small{width:100%;line-height:1.5;color:#b9ccdb}
+body .duo-panel button{padding:6px 8px;border:1px solid #8bd5ff44;border-radius:6px;background:#28516d;color:#e9f7ff;font-size:11px;cursor:pointer}body .duo-panel button:disabled{opacity:.45;cursor:default}body .duo-panel button[aria-pressed='true']{background:#327fab}
+body .duo-panel summary{cursor:pointer;font-size:12px;padding:4px}body .fusion-skills{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:8px}body .fusion-skills button{display:flex;text-align:left;gap:5px;align-items:center}body .fusion-skills kbd{font-size:9px;color:#91c8e8}body .fusion-skills span{font-size:10px;line-height:1.3}body .fusion-skills small{display:block;color:#9fc4dc;font-size:9px;margin-top:3px}
+body[data-story='watch'] .hud .duo-panel,body[data-story='outro'] .hud .duo-panel,body[data-story='menu'] .hud .duo-panel,body[data-story='timeskip'] .hud .duo-panel,body[data-story='ending'] .hud .duo-panel{display:none}
+body[data-play='explore'] .hud .duo-panel{display:none}
+body .hud .status-row{position:absolute;inset:10px 10px auto;display:grid;grid-template-columns:minmax(0,280px) 76px minmax(0,280px);justify-content:space-between;align-items:start;gap:10px;padding:0;pointer-events:none}
+body .hud .fighter-status{min-width:0;padding:9px 12px;border-radius:12px;background:linear-gradient(135deg,rgba(10,22,34,.84),rgba(19,38,52,.68));box-shadow:0 3px 15px #0003;backdrop-filter:blur(8px)}
+body .hud .status-heading{gap:6px;margin-bottom:6px;min-width:0}
+body .hud .fighter-name{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body .hud .form-name,body .hud .monster-count{font-size:10px;white-space:nowrap}
+body .hud .meter{height:5px;margin:0;border:0}
+body .hud .meter--energy{height:3px;margin-top:3px}
+body .hud .meter-labels{margin-top:3px;font-size:10px;line-height:1.2}
+body .hud .meter-labels strong{font-size:10px}
+body .hud .battle-mark{padding:3px 0;min-width:0;gap:1px}
+body .hud .battle-mark>span{font-size:8px;letter-spacing:1px}
+body .hud .battle-mark strong{font-size:18px;line-height:1.15}
+body .hud .battle-mark small{font-size:9px;line-height:1.2}
+body .story-screen .cinema-top{position:absolute;inset:var(--status-bottom) 10px auto;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:4px 12px;padding:0;background:none;border:0;backdrop-filter:none;pointer-events:none}
+body[data-story='combat'] .story-screen .cinema-top{top:var(--status-bottom);left:10px;right:10px;padding:0;background:none;border-radius:0}
+body[data-play='manual'][data-story='combat'] .hud .move-guide{display:none}
+body .cinema-top>[data-story-label]{font-size:10px;line-height:22px;letter-spacing:.5px;text-shadow:0 1px 4px #000}
+body .story-screen .story-copy{position:static;inset:auto;transform:none;width:auto;max-width:560px;grid-column:1;grid-row:2;margin:0;padding:0;text-align:left;pointer-events:none}
+body .story-copy h2{font-size:16px;line-height:1.25;margin:0;text-shadow:0 2px 6px #000}
+body .story-copy p{font-size:10px;line-height:1.4;margin:4px 0;text-shadow:0 1px 4px #000}
+body .story-copy button{pointer-events:auto;font-size:12px;padding:8px 12px;margin-top:8px}
+body[data-story='combat'] .story-copy h2{font-size:12px}
+body[data-story='combat'] .story-copy p{font-size:10px;opacity:.8}
+body .game-settings{grid-column:2;grid-row:1/3;position:relative;pointer-events:auto;max-width:360px;font-size:12px}
+body .game-settings>summary,body .movement-panel>summary{list-style:none;cursor:pointer;border:1px solid #b7dcf62b;border-radius:8px;background:#102535d9;padding:7px 11px;color:#e5f3ff;box-shadow:0 3px 12px #0002}
+body .game-settings[open]>summary{background:#1d4159}
+body .settings-body{position:absolute;right:0;top:calc(100% + 6px);width:min(350px,calc(100vw - 20px));max-height:65dvh;overflow:auto;display:flex;flex-wrap:wrap;gap:10px;padding:12px;background:#0c1d2cf5;border:1px solid #82c7eb4d;border-radius:12px;box-shadow:0 8px 24px #0006;backdrop-filter:blur(12px)}
+body .story-tools{position:static;display:grid;gap:10px;width:100%;max-width:none;padding:0;background:none;transform:none;flex-wrap:nowrap}
+body .story-tools label{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px}
+body .story-tools select{width:220px;max-width:65%;font-size:12px;min-width:0}
+body .settings-body .hero-toolbar{position:static;inset:auto;display:block;padding:8px;background:#ffffff08;border:1px solid #ffffff12;border-radius:8px;width:100%;transform:none;font-size:11px}
+body .hero-toolbar summary{cursor:pointer;line-height:1.5}
+body .hero-toolbar summary span{display:block;opacity:.6;font-size:10px}
+body .hero-details{display:grid;gap:8px;padding-top:10px}
+body .hero-details label{display:flex;gap:8px;align-items:center}
+body .hero-details select{max-width:240px;font-size:12px}
+body .settings-body [data-command]{position:static;inset:auto;width:auto;height:auto;padding:8px 12px;transform:none}
+body .hud .combat-tray{position:absolute;inset:auto 10px 10px;display:grid;gap:6px;padding:10px 12px;max-height:34dvh;overflow:auto;background:linear-gradient(110deg,#0d1f2fef,#152f42df);border:1px solid #a6d9ff33;border-radius:14px;box-shadow:0 6px 26px #0003;backdrop-filter:blur(10px);pointer-events:auto}
+body .combat-tray-header{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+body .hud .forms,body .hud .zero-forms,body .hud .illusion-forms{position:static;inset:auto;transform:none;display:flex;flex-wrap:wrap;gap:5px;width:auto;max-width:none;padding:0;margin:0;background:none;border:0}
+body .hud .forms button,body .hud .zero-forms button,body .hud .illusion-forms button{min-width:0;min-height:28px;padding:5px 9px;font-size:11px;border-radius:7px}
+body .hud .forms kbd{font-size:10px;margin-right:5px}
+body .hud .light-meter{position:static;inset:auto;transform:none;display:flex;gap:6px;width:110px;padding:0;background:none;border:0;font-size:10px;order:2;margin-left:auto}
+body .hud .light-meter svg{width:14px;height:14px}
+body .light-track{flex:1;height:4px}
+body .hud .light-meter strong{font-size:10px}
+body .hud .move-guide{position:static;inset:auto;transform:none;text-align:left;margin:0;max-width:none;font-size:10px;line-height:1.3;opacity:.75}
+body .skill-tabs{display:flex;gap:6px;border-top:1px solid #ffffff12;padding-top:6px}
+body .skill-tabs button{padding:5px 12px;font-size:11px;color:#a2bbce;background:none;border:1px solid transparent;border-radius:7px;cursor:pointer}
+body .skill-tabs button[aria-pressed='true']{background:#5bb9ec22;border-color:#5bb9ec66;color:#e4f7ff}
+body .hud .action-dock{position:static;inset:auto;transform:none;display:block;padding:0;margin:0;width:auto;max-width:none;background:none;border:0}
+body .skill-group{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:6px}
+body .hud .action-button{min-height:43px;min-width:0;width:auto;padding:6px 8px;display:flex;flex-direction:row;justify-content:flex-start;align-items:center;gap:6px;border-radius:8px;text-align:left}
+body .hud .action-button>svg{display:none}
+body .hud .action-button kbd{font-size:10px;line-height:1.2;flex-shrink:0;max-width:38px;white-space:normal}
+body .hud .action-button span{font-size:11px;line-height:1.3;white-space:normal}
+body .hud .action-button small{font-size:9px;line-height:1.2;display:block;margin-top:2px}
+body .hud .movement-panel{position:absolute;left:10px;bottom:calc(var(--tray-height) + 18px);z-index:8;pointer-events:auto;max-width:440px;font-size:11px}
+body .hud .touch-movement{position:static;inset:auto;transform:none;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin:6px 0 0;padding:8px;max-width:min(440px,calc(100vw - 20px));max-height:32dvh;overflow:auto;background:#0c2033f5;border:1px solid #a6d9ff33;border-radius:10px}
+body .touch-movement button{width:auto;min-width:0;height:auto;min-height:34px;padding:5px 8px;font-size:10px}
+body .hud .combat-notices{position:absolute;top:var(--cinema-bottom);left:10px;width:min(280px,28vw);max-height:30dvh;overflow:auto;display:grid;gap:6px;pointer-events:none}
+body .combat-notices>.announcement,body .combat-notices>.last-stand,body .combat-notices>.tutorial-panel,body .combat-notices>.energy-alert{position:static;inset:auto;transform:none;width:auto;max-width:none;margin:0;padding:8px 10px;border-radius:9px;font-size:11px;line-height:1.4;text-align:left;background:#102737d9;box-shadow:none;pointer-events:auto}
+body .combat-notices>.announcement:empty{display:none}
+body .combat-notices .tutorial-panel h2{font-size:13px;margin:5px 0}
+body .combat-notices .tutorial-panel p{font-size:11px;margin:5px 0}
+body .combat-notices .tutorial-label{font-size:9px}
+body .combat-notices .energy-help-command{font-size:11px;padding:0;display:flex;gap:7px}
+body .story-screen .skill-caption{position:absolute;top:auto;left:50%;bottom:calc(var(--tray-height) + 18px);transform:translateX(-50%);width:max-content;max-width:48vw;padding:8px 16px;font-size:13px;line-height:1.4;border-radius:9px;text-align:center;pointer-events:none}
+body .story-screen .travel-info{position:absolute;inset:var(--cinema-bottom) 10px auto auto;max-width:min(260px,26vw);padding:8px 10px;font-size:11px;transform:none}
+body .story-screen .pilot-hud [data-mission]{position:absolute;top:var(--cinema-bottom);left:50%;transform:translateX(-50%);max-width:48vw;padding:8px 12px;font-size:11px;background:#102535d9;border-radius:9px}
+body .story-screen .pilot-controls{bottom:18px;gap:6px}
+body .story-screen .dialogue-card{bottom:24px;max-width:min(760px,calc(100vw - 32px));padding:16px 20px}
+body[data-story='watch'] .hud .combat-tray,body[data-story='outro'] .hud .combat-tray,body[data-story='timeskip'] .hud .combat-tray,body[data-story='ending'] .hud .combat-tray,body[data-story='menu'] .hud .combat-tray,body[data-story='watch'] .hud .movement-panel,body[data-story='outro'] .hud .movement-panel,body[data-story='menu'] .hud .movement-panel{display:none}
+body .hud [hidden],body .story-screen [hidden]{display:none!important}
+@media(max-width:700px){body .hud .status-row{grid-template-columns:minmax(0,1fr) 58px minmax(0,1fr);gap:6px;inset:7px 7px auto}body .hud .fighter-status{padding:7px 8px}body .hud .fighter-name{font-size:11px}body .hud .form-name,body .hud .monster-count{font-size:8px}body .status-heading{flex-wrap:wrap}body .cinema-top>[data-story-label]{font-size:8px}body .hud .combat-tray{inset:auto 7px 7px;padding:8px;gap:4px;max-height:35dvh}body .skill-group{grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}body .hud .light-meter{display:none}body .hud .combat-notices{width:36vw;max-height:23dvh}body .hud .move-guide{display:none}body .story-copy p{max-width:70vw}body .game-settings>summary{padding:5px 8px;font-size:10px}}
+@media(max-height:600px){body .hud .combat-tray{max-height:31dvh;padding:6px 9px;gap:4px}body .hud .move-guide{display:none}body .hud .action-button{min-height:34px;padding:4px 7px}body .hud .action-button small{display:none}body .hud .forms button{min-height:24px;padding:3px 7px}body .hud .combat-notices{max-height:23dvh}body .story-copy p{display:none}}
